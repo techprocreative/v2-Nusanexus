@@ -66,7 +66,6 @@ export default async function AdminDashboardPage() {
         .from('payment_transactions')
         .select('*, payment_gateways(display_name)')
         .order('created_at', { ascending: false })
-        .e })
         .limit(10);
 
     // Get credit usage stats

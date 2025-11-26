@@ -219,66 +219,45 @@ export interface Database {
       subscriptions: {
         Row: {
           id: string
-          workspace_id: string
+          workspace_id: string | null
           plan_id: string | null
-          plan_snapshot_id: string | null
-          payment_gateway: string | null
-          external_id: string | null
-          customer_external_id: string | null
-          price_external_id: string | null
-          product_external_id: string | null
-          currency_code: string
-          trial_period_days: number | null
-          usage_count: number
-          status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'ended'
+          payment_gateway_id: string | null
+          external_subscription_id: string | null
+          status: string
+          current_period_start: string | null
+          current_period_end: string | null
+          cancel_at_period_end: boolean
+          canceled_at: string | null
           created_at: string
           updated_at: string | null
-          canceled_at: string | null
-          renew_at: string | null
-          reset_credits_at: string | null
-          ended_at: string | null
         }
         Insert: {
           id?: string
-          workspace_id: string
+          workspace_id?: string | null
           plan_id?: string | null
-          plan_snapshot_id?: string | null
-          payment_gateway?: string | null
-          external_id?: string | null
-          customer_external_id?: string | null
-          price_external_id?: string | null
-          product_external_id?: string | null
-          currency_code?: string
-          trial_period_days?: number | null
-          usage_count?: number
-          status?: 'active' | 'canceled' | 'past_due' | 'trialing' | 'ended'
+          payment_gateway_id?: string | null
+          external_subscription_id?: string | null
+          status?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
           updated_at?: string | null
-          canceled_at?: string | null
-          renew_at?: string | null
-          reset_credits_at?: string | null
-          ended_at?: string | null
         }
         Update: {
           id?: string
-          workspace_id?: string
+          workspace_id?: string | null
           plan_id?: string | null
-          plan_snapshot_id?: string | null
-          payment_gateway?: string | null
-          external_id?: string | null
-          customer_external_id?: string | null
-          price_external_id?: string | null
-          product_external_id?: string | null
-          currency_code?: string
-          trial_period_days?: number | null
-          usage_count?: number
-          status?: 'active' | 'canceled' | 'past_due' | 'trialing' | 'ended'
+          payment_gateway_id?: string | null
+          external_subscription_id?: string | null
+          status?: string
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean
+          canceled_at?: string | null
           created_at?: string
           updated_at?: string | null
-          canceled_at?: string | null
-          renew_at?: string | null
-          reset_credits_at?: string | null
-          ended_at?: string | null
         }
       }
       orders: {
@@ -702,6 +681,284 @@ export interface Database {
           id?: string
           key?: string
           value?: Json | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      ai_providers: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          base_url: string
+          api_key_encrypted: string
+          status: number
+          priority: number
+          config: Json
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          base_url: string
+          api_key_encrypted: string
+          status?: number
+          priority?: number
+          config?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          type?: 'llm' | 'image' | 'tts' | 'transcription'
+          base_url?: string
+          api_key_encrypted?: string
+          status?: number
+          priority?: number
+          config?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      ai_models: {
+        Row: {
+          id: string
+          provider_id: string | null
+          model_id: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          context_length: number | null
+          input_cost: number | null
+          output_cost: number | null
+          status: number
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          provider_id?: string | null
+          model_id: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          context_length?: number | null
+          input_cost?: number | null
+          output_cost?: number | null
+          status?: number
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          provider_id?: string | null
+          model_id?: string
+          display_name?: string
+          type?: 'llm' | 'image' | 'tts' | 'transcription'
+          context_length?: number | null
+          input_cost?: number | null
+          output_cost?: number | null
+          status?: number
+          metadata?: Json
+          created_at?: string
+        }
+      }
+      subscription_plans: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          monthly_credits: number
+          price: number
+          features: Json | null
+          is_active: boolean
+          sort_order: number | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          monthly_credits: number
+          price: number
+          features?: Json | null
+          is_active?: boolean
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          monthly_credits?: number
+          price?: number
+          features?: Json | null
+          is_active?: boolean
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      credit_packages: {
+        Row: {
+          id: string
+          name: string
+          credits: number
+          price: number
+          discount_percentage: number | null
+          is_active: boolean
+          sort_order: number | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          credits: number
+          price: number
+          discount_percentage?: number | null
+          is_active?: boolean
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          credits?: number
+          price?: number
+          discount_percentage?: number | null
+          is_active?: boolean
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      payment_gateways: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          is_active: boolean
+          is_sandbox: boolean
+          credentials_encrypted: string
+          settings: Json
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          is_active?: boolean
+          is_sandbox?: boolean
+          credentials_encrypted: string
+          settings?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          is_active?: boolean
+          is_sandbox?: boolean
+          credentials_encrypted?: string
+          settings?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      payment_transactions: {
+        Row: {
+          id: string
+          workspace_id: string | null
+          user_id: string | null
+          payment_gateway_id: string | null
+          external_transaction_id: string | null
+          payment_method: string | null
+          type: string
+          amount: number
+          status: string
+          subscription_id: string | null
+          credit_package_id: string | null
+          credits_purchased: number | null
+          payment_url: string | null
+          payment_instructions: Json | null
+          paid_at: string | null
+          expired_at: string | null
+          metadata: Json
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id?: string | null
+          user_id?: string | null
+          payment_gateway_id?: string | null
+          external_transaction_id?: string | null
+          payment_method?: string | null
+          type: string
+          amount: number
+          status?: string
+          subscription_id?: string | null
+          credit_package_id?: string | null
+          credits_purchased?: number | null
+          payment_url?: string | null
+          payment_instructions?: Json | null
+          paid_at?: string | null
+          expired_at?: string | null
+          metadata?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string | null
+          user_id?: string | null
+          payment_gateway_id?: string | null
+          external_transaction_id?: string | null
+          payment_method?: string | null
+          type?: string
+          amount?: number
+          status?: string
+          subscription_id?: string | null
+          credit_package_id?: string | null
+          credits_purchased?: number | null
+          payment_url?: string | null
+          payment_instructions?: Json | null
+          paid_at?: string | null
+          expired_at?: string | null
+          metadata?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      user_payment_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          preferred_gateway_id: string | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          preferred_gateway_id?: string | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          preferred_gateway_id?: string | null
           created_at?: string
           updated_at?: string | null
         }
