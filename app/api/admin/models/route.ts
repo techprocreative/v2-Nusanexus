@@ -4,7 +4,9 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -36,7 +38,9 @@ export async function GET(request: Request) {
 
         if (error) throw error;
 
-        return NextResponse.json(models || []);
+        return NextResponse.json({
+            models: models || [],
+        });
     } catch (error: any) {
         return NextResponse.json(
             { error: error.message || 'Failed to fetch models' },
@@ -48,7 +52,9 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -65,7 +71,7 @@ export async function PATCH(request: Request) {
         }
 
         const body = await request.json();
-        const { id, input_cost, output_cost, status } = body;
+        const { id, input_cost, output_cost, cost_per_unit, status } = body;
 
         if (!id) {
             return NextResponse.json({ error: 'Missing model ID' }, { status: 400 });
@@ -75,8 +81,16 @@ export async function PATCH(request: Request) {
         if (input_cost !== undefined) updateData.input_cost = input_cost;
         if (output_cost !== undefined) updateData.output_cost = output_cost;
         if (status !== undefined) updateData.status = status;
+        if (cost_per_unit !== undefined) {
+            updateData.metadata = {
+                cost_per_unit,
+            };
+        }
 
-        const { data: model, error } = await supabase
+        const {
+            data: model,
+            error,
+        } = await supabase
             .from('ai_models')
             .update(updateData)
             .eq('id', id)

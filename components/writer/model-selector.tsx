@@ -16,9 +16,11 @@ interface Model {
     id: string;
     model_id: string;
     display_name: string;
+    type: string;
     context_length?: number;
-    input_cost_per_token?: number;
-    output_cost_per_token?: number;
+    input_cost?: number;
+    output_cost?: number;
+    metadata?: Record<string, any>;
     provider?: {
         display_name: string;
     };
@@ -35,18 +37,23 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
 
     useEffect(() => {
         fetchModels();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchModels = async () => {
         try {
-            const response = await fetch('/api/admin/models?type=llm');
+            const response = await fetch('/api/ai/models?type=llm');
             const data = await response.json();
 
             if (response.ok) {
-                setModels(data.models || []);
-                // Set first model as default if no value
-                if (!value && data.models?.length > 0) {
-                    onChange(data.models[0].model_id);
+                const modelsData: Model[] = data.models || data || [];
+                setModels(modelsData);
+
+                if (modelsData.length > 0) {
+                    const hasSelected = modelsData.some((m) => m.model_id === value);
+                    if (!value || !hasSelected) {
+                        onChange(modelsData[0].model_id);
+                    }
                 }
             }
         } catch (error) {
@@ -96,10 +103,10 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
                     {selectedModel.context_length && (
                         <p>Context: {selectedModel.context_length.toLocaleString()} tokens</p>
                     )}
-                    {selectedModel.input_cost_per_token && selectedModel.output_cost_per_token && (
+                    {selectedModel.input_cost != null && selectedModel.output_cost != null && (
                         <p>
-                            Cost: ${selectedModel.input_cost_per_token.toFixed(6)}/input token, $
-                            {selectedModel.output_cost_per_token.toFixed(6)}/output token
+                            Cost: ${selectedModel.input_cost.toFixed(6)}/input token, $
+                            {selectedModel.output_cost.toFixed(6)}/output token
                         </p>
                     )}
                 </div>

@@ -31,8 +31,8 @@ interface Model {
     model_id: string;
     display_name: string;
     type: string;
-    input_cost_per_token?: number;
-    output_cost_per_token?: number;
+    input_cost?: number;
+    output_cost?: number;
     cost_per_unit?: number;
     context_length?: number;
     status: number;
@@ -69,9 +69,9 @@ export function ModelList({ models, type }: ModelListProps) {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model_id: editingModel.id,
-                    input_cost_per_token: editingModel.input_cost_per_token,
-                    output_cost_per_token: editingModel.output_cost_per_token,
+                    id: editingModel.id,
+                    input_cost: editingModel.input_cost,
+                    output_cost: editingModel.output_cost,
                     cost_per_unit: editingModel.cost_per_unit,
                     status: editingModel.status,
                 }),
@@ -102,8 +102,8 @@ export function ModelList({ models, type }: ModelListProps) {
     };
 
     const formatCost = (cost?: number) => {
-        if (!cost) return 'N/A';
-        return `$${cost.toFixed(6)}`;
+        if (cost == null) return 'N/A';
+        return `${cost.toFixed(6)}`;
     };
 
     return (
@@ -144,7 +144,10 @@ export function ModelList({ models, type }: ModelListProps) {
                     <TableBody>
                         {filteredModels.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={type === 'llm' ? 7 : 5} className="text-center py-8 text-muted-foreground">
+                                <TableCell
+                                    colSpan={type === 'llm' ? 7 : 5}
+                                    className="text-center py-8 text-muted-foreground"
+                                >
                                     No models found
                                 </TableCell>
                             </TableRow>
@@ -161,12 +164,14 @@ export function ModelList({ models, type }: ModelListProps) {
                                     {type === 'llm' && (
                                         <>
                                             <TableCell className="font-mono text-xs">
-                                                {formatCost(model.input_cost_per_token)}
+                                                {formatCost(model.input_cost)}
                                             </TableCell>
                                             <TableCell className="font-mono text-xs">
-                                                {formatCost(model.output_cost_per_token)}
+                                                {formatCost(model.output_cost)}
                                             </TableCell>
-                                            <TableCell>{model.context_length?.toLocaleString() || 'N/A'}</TableCell>
+                                            <TableCell>
+                                                {model.context_length?.toLocaleString() || 'N/A'}
+                                            </TableCell>
                                         </>
                                     )}
                                     {(type === 'image' || type === 'tts' || type === 'transcription') && (
@@ -215,11 +220,11 @@ export function ModelList({ models, type }: ModelListProps) {
                                         <Input
                                             type="number"
                                             step="0.000001"
-                                            value={editingModel.input_cost_per_token || 0}
+                                            value={editingModel.input_cost || 0}
                                             onChange={(e) =>
                                                 setEditingModel({
                                                     ...editingModel,
-                                                    input_cost_per_token: parseFloat(e.target.value),
+                                                    input_cost: parseFloat(e.target.value),
                                                 })
                                             }
                                         />
@@ -229,11 +234,11 @@ export function ModelList({ models, type }: ModelListProps) {
                                         <Input
                                             type="number"
                                             step="0.000001"
-                                            value={editingModel.output_cost_per_token || 0}
+                                            value={editingModel.output_cost || 0}
                                             onChange={(e) =>
                                                 setEditingModel({
                                                     ...editingModel,
-                                                    output_cost_per_token: parseFloat(e.target.value),
+                                                    output_cost: parseFloat(e.target.value),
                                                 })
                                             }
                                         />

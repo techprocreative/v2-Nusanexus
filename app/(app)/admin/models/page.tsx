@@ -16,7 +16,7 @@ export default async function ModelsPage() {
     }
 
     const { data: profile } = await supabase
-        .from('users')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
@@ -31,15 +31,22 @@ export default async function ModelsPage() {
         .select(
             `
       *,
-      provider:ai_providers(display_name)
+      provider:ai_providers(display_name),
+      metadata
     `
         )
         .order('display_name', { ascending: true });
 
-    const llmModels = models?.filter((m: any) => m.type === 'llm') || [];
-    const imageModels = models?.filter((m: any) => m.type === 'image') || [];
-    const ttsModels = models?.filter((m: any) => m.type === 'tts') || [];
-    const transcriptionModels = models?.filter((m: any) => m.type === 'transcription') || [];
+    const modelsWithCost =
+        models?.map((m: any) => ({
+            ...m,
+            cost_per_unit: m.metadata?.cost_per_unit ?? undefined,
+        })) || [];
+
+    const llmModels = modelsWithCost.filter((m: any) => m.type === 'llm');
+    const imageModels = modelsWithCost.filter((m: any) => m.type === 'image');
+    const ttsModels = modelsWithCost.filter((m: any) => m.type === 'tts');
+    const transcriptionModels = modelsWithCost.filter((m: any) => m.type === 'transcription');
 
     return (
         <div className="container mx-auto py-8">

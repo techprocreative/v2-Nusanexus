@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS public.credit_packages (
 CREATE TABLE IF NOT EXISTS public.payment_transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES public.users(id),
+  user_id UUID REFERENCES public.profiles(id),
   
   -- Payment gateway info
   payment_gateway_id UUID REFERENCES public.payment_gateways(id),
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS public.payment_transactions (
 -- User payment preferences
 CREATE TABLE IF NOT EXISTS public.user_payment_preferences (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE UNIQUE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE UNIQUE,
   preferred_gateway_id UUID REFERENCES public.payment_gateways(id),
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()

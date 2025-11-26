@@ -187,7 +187,7 @@ export function ProviderForm({ provider, isEdit = false }: ProviderFormProps) {
                         min="0"
                     />
                     <p className="text-xs text-muted-foreground">
-                        Lower number = higher priority (0 is highest)
+                        Higher number = higher priority
                     </p>
                 </div>
 

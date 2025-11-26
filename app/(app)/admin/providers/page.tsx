@@ -18,7 +18,7 @@ export default async function ProvidersPage() {
     }
 
     const { data: profile } = await supabase
-        .from('users')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
@@ -35,16 +35,17 @@ export default async function ProvidersPage() {
         .order('priority', { ascending: true });
 
     // Transform data to include has_api_key flag
-    const providersWithKeyStatus = providers?.map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        display_name: p.display_name,
-        type: p.type,
-        base_url: p.base_url,
-        status: p.status,
-        priority: p.priority,
-        has_api_key: !!p.api_key_encrypted,
-    })) || [];
+    const providersWithKeyStatus =
+        providers?.map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            display_name: p.display_name,
+            type: p.type,
+            base_url: p.base_url,
+            status: p.status,
+            priority: p.priority,
+            has_api_key: !!p.api_key_encrypted,
+        })) || [];
 
     return (
         <div className="container mx-auto py-8">
