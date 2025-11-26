@@ -7,7 +7,9 @@ import { WorkspaceStats } from '@/components/dashboard/workspace-stats';
 
 export default async function DashboardPage() {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -54,21 +56,47 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(10);
 
-  // Generate mock credit usage data for last 30 days
-  const creditUsageData = Array.from({ length: 30 }, (_, i) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
-    return {
-      date: date.toISOString(),
-      credits: Math.floor(Math.random() * 500) + 100,
-    };
-  });
+  // Credit usage for last 30 days from stats
+  const today = new Date();
+  const startDate = new Date();
+  startDate.setDate(today.getDate() - 29);
+  const fromDate = startDate.toISOString().slice(0, 10);
+
+  let creditUsageData: { date: string; credits: number }[] = [];
+
+  if (workspace?.id) {
+    const { data: usageRows } = await supabase
+      .from('stats')
+      .select('date, metric')
+      .eq('workspace_id', workspace.id)
+      .eq('type', 'usage')
+      .gte('date', fromDate)
+      .order('date', { ascending: true });
+
+    const usageByDate = new Map<string, number>();
+    for (const row of usageRows || []) {
+      const d = row.date as string;
+      const current = usageByDate.get(d) || 0;
+      usageByDate.set(d, current + Number(row.metric || 0));
+    }
+
+    creditUsageData = Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      const key = d.toISOString().slice(0, 10);
+      return {
+        date: key,
+        credits: usageByDate.get(key) || 0,
+      };
+    });
+  } else {
+    // No workspace yet – show empty data
+    creditUsageData = [];
+  }
 
   const stats = {
     totalItems: totalItems || 0,
-    creditsUsedThisMonth: workspace?.credit_count
-      ? Math.max(0, 10000 - workspace.credit_count)
-      : 0,
+    creditsUsedThisMonth: 0,
     memberCount: memberCount || 0,
     itemsThisMonth: itemsThisMonth || 0,
   };

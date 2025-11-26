@@ -1,12 +1,23 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import { z } from 'zod';
+
+const ImageSchema = z.object({
+    prompt: z.string().min(1).max(2000),
+    model: z.string().optional(),
+    size: z.enum(['1024x1024', '1024x1792', '1792x1024']).optional(),
+    quality: z.enum(['standard', 'hd']).optional(),
+    presetId: z.string().uuid().optional(),
+});
 
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
         const serviceClient = createServiceClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -22,18 +33,23 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'No workspace selected' }, { status: 400 });
         }
 
-        const body = await request.json();
+        const json = await request.json().catch(() => null);
+        const parsed = ImageSchema.safeParse(json);
+
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Invalid request payload', details: parsed.error.flatten() },
+                { status: 400 }
+            );
+        }
+
         const {
             prompt,
             model = 'dall-e-3',
             size = '1024x1024',
             quality = 'standard',
             presetId,
-        } = body;
-
-        if (!prompt) {
-            return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
-        }
+        } = parsed.data;
 
         // Check workspace credits
         const { data: workspace } = await supabase

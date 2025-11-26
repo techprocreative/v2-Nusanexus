@@ -53,11 +53,41 @@ supabase db push
 Add the following in Vercel → Settings → Environment Variables:
 
 ```
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
+SUPABASE_SERVICE_ROLE_KEY=eyJxxx...
+
+# Encryption
+ENCRYPTION_KEY=your_32_byte_hex_string
+
+# Application
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NEXT_PUBLIC_APP_NAME=Nusanexus
+
+# Monitoring (Sentry)
+SENTRY_DSN=your_sentry_dsn
+SENTRY_ENVIRONMENT=production
+
+# Rate limiting (Upstash Redis)
+UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
+```
 NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJxxx...
 SUPABASE_SERVICE_ROLE_KEY=eyJxxx...
 ENCRYPTION_KEY=your_32_byte_hex_string
+
 NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NEXT_PUBLIC_APP_NAME=Nusanexus
+
+# Monitoring (Sentry)
+SENTRY_DSN=your_sentry_dsn
+SENTRY_ENVIRONMENT=production
+
+# Rate limiting (Upstash Redis)
+UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
 ```
 
 **Generate Encryption Key:**
@@ -206,28 +236,16 @@ Value: cname.vercel-dns.com
 ### 8. Monitoring Setup
 
 **Error Tracking (Sentry):**
-```bash
-npm install @sentry/nextjs
 
-# Initialize
-npx @sentry/wizard@latest -i nextjs
-```
+Sentry SDK is already integrated in the codebase (`@sentry/nextjs` with
+`sentry.client.config.ts` and `sentry.server.config.ts`).
 
-Add to `next.config.js`:
-```javascript
-const { withSentryConfig } = require('@sentry/nextjs');
+To enable it in production:
 
-module.exports = withSentryConfig(
-  {
-    // Your Next.js config
-  },
-  {
-    silent: true,
-    org: "your-org",
-    project: "your-project",
-  }
-);
-```
+1. Set these environment variables in Vercel:
+   - `SENTRY_DSN`
+   - `SENTRY_ENVIRONMENT` (e.g. `production`)
+2. Deploy the app – errors from API routes and pages will be sent to Sentry.
 
 **Uptime Monitoring:**
 1. Sign up for [UptimeRobot](https://uptimerobot.com)
@@ -262,7 +280,7 @@ module.exports = withSentryConfig(
 - [ ] No secrets in code
 - [ ] HTTPS enforced
 - [ ] CORS configured correctly
-- [ ] Rate limiting implemented (optional)
+- [ ] Rate limiting configured (Upstash Redis + middleware)
 
 ---
 

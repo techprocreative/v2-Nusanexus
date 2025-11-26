@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
+const DEFAULT_MIN_PAYOUT = 100000; // Rp 100.000 by default
+
 export async function GET(request: Request) {
     try {
         const supabase = createClient();
@@ -64,6 +66,20 @@ export async function POST(request: Request) {
             );
         }
 
+        const minPayout =
+            Number(process.env.AFFILIATE_MIN_PAYOUT) > 0
+                ? Number(process.env.AFFILIATE_MIN_PAYOUT)
+                : DEFAULT_MIN_PAYOUT;
+
+        if (amount < minPayout) {
+            return NextResponse.json(
+                {
+                    error: `Minimum payout is Rp ${minPayout.toLocaleString('id-ID')}`,
+                },
+                { status: 400 }
+            );
+        }
+
         // Get affiliate
         const { data: affiliate, error: affError } = await supabase
             .from('affiliates')
@@ -75,6 +91,34 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 { error: affError?.message || 'Affiliate not found' },
                 { status: 404 }
+            );
+        }
+
+        // Require payout method configuration
+        if (!affiliate.payout_method) {
+            return NextResponse.json(
+                { error: 'Please configure your payout method before requesting a payout.' },
+                { status: 400 }
+            );
+        }
+
+        if (
+            affiliate.payout_method === 'paypal' &&
+            (!affiliate.paypal_email || affiliate.paypal_email.trim() === '')
+        ) {
+            return NextResponse.json(
+                { error: 'Please provide a valid PayPal email in your payout settings.' },
+                { status: 400 }
+            );
+        }
+
+        if (
+            affiliate.payout_method === 'bank_transfer' &&
+            (!affiliate.bank_requisites || affiliate.bank_requisites.trim() === '')
+        ) {
+            return NextResponse.json(
+                { error: 'Please provide your bank account details in your payout settings.' },
+                { status: 400 }
             );
         }
 
