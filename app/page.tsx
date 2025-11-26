@@ -59,23 +59,22 @@ export default function HomePage() {
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-200">
                 <Sparkles className="h-3 w-3" />
               </span>
-              <span>Multi-tenant AI SaaS platform</span>
+              <span>Multi-skill AI assistant in Bahasa Indonesia</span>
             </div>
 
             <h1 className="mt-6 text-balance text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-              Build and scale your
+              Satu ruang kerja untuk
               <span className="bg-gradient-to-r from-sky-500 via-indigo-500 to-violet-500 bg-clip-text text-transparent">
                 {' '}
-                AI content business
+                semua AI kamu
               </span>
               .
             </h1>
 
             <p className="mt-4 max-w-2xl text-balance text-base text-muted-foreground sm:text-lg">
-              Nusanexus adalah platform AI all-in-one untuk menulis konten,
-              membuat gambar, generate kode, voiceover, dan transkripsi —
-              lengkap dengan workspace multi-tenant, billing rupiah, dan panel
-              admin siap pakai.
+              Nusanexus menghubungkan kamu ke banyak model dan keahlian AI dalam satu
+              tempat: menulis, desain, coding, riset, voice, dan banyak lagi. Tanpa
+              perlu berpindah tools atau belajar prompt yang rumit.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-4">
@@ -83,17 +82,16 @@ export default function HomePage() {
                 href="/signup"
                 className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow hover:opacity-90"
               >
-                Mulai gratis sekarang
+                Coba gratis sekarang
               </Link>
               <Link
                 href="/pricing"
                 className="rounded-lg border px-6 py-3 text-sm font-semibold text-muted-foreground hover:bg-background"
               >
-                Lihat paket harga
+                Lihat paket & harga
               </Link>
               <p className="w-full text-xs text-muted-foreground sm:w-auto">
-                Tidak perlu kartu kredit • Billing dalam Rupiah • Cocok untuk
-                agency & creator
+                Cocok untuk kreator, karyawan, mahasiswa, dan agency konten
               </p>
             </div>
 
@@ -104,8 +102,8 @@ export default function HomePage() {
                   <PenSquare className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">AI Writer</p>
-                  <p>Artikel, copywriting, dan konten social siap publish.</p>
+                  <p className="font-medium text-foreground">Tulis & susun ide</p>
+                  <p>Bikin artikel, caption, dan outline konten dalam hitungan menit.</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -113,8 +111,8 @@ export default function HomePage() {
                   <ImageIcon className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Image & Code</p>
-                  <p>Generate visual dan boilerplate kode dalam hitungan detik.</p>
+                  <p className="font-medium text-foreground">Visual & desain</p>
+                  <p>Generate gambar dan konsep desain untuk social media & iklan.</p>
                 </div>
               </div>
               <div className="flex items-start gap-2">
@@ -122,54 +120,54 @@ export default function HomePage() {
                   <Mic className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="font-medium text-foreground">Voice & Transcribe</p>
-                  <p>Text-to-speech dan transkripsi audio dengan kualitas tinggi.</p>
+                  <p className="font-medium text-foreground">Voice & meeting notes</p>
+                  <p>Transkrip meeting dan ubah text jadi voiceover bahasa Indonesia.</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right side – feature overview */}
+          {/* Right side – example tasks */}
           <div className="hidden md:block">
             <div className="rounded-2xl border bg-card p-5 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Dashboard Nusanexus
+                Contoh tugas yang bisa dikerjakan Nusanexus
               </p>
               <div className="mt-4 space-y-4 text-sm">
                 <FeatureRow
                   icon={<PenSquare className="h-4 w-4" />}
-                  title="AI Writer & Chat"
-                  description="Prompt builder, preset library, dan chat multi-turn untuk tim konten."
-                />
-                <FeatureRow
-                  icon={<ImageIcon className="h-4 w-4" />}
-                  title="Image Generation"
-                  description="DALL·E 3 dan model image lain via router provider."
-                />
-                <FeatureRow
-                  icon={<Code2 className="h-4 w-4" />}
-                  title="Code Assistant"
-                  description="Generate snippet dan boilerplate untuk berbagai bahasa pemrograman."
+                  title="Tulis 30 caption Instagram"
+                  description="Berikan satu deskripsi brand, Nusanexus buatkan puluhan variasi caption dan hook."
                 />
                 <FeatureRow
                   icon={<MessageCircle className="h-4 w-4" />}
-                  title="Multi-tenant Workspace"
-                  description="Workspace terpisah, role-based access, dan credit sharing."
+                  title="Rangkum dokumen panjang"
+                  description="Upload teks atau paste artikel panjang, dapatkan ringkasan poin-poin penting."
+                />
+                <FeatureRow
+                  icon={<ImageIcon className="h-4 w-4" />}
+                  title="Thumbnail & ide visual"
+                  description="Generate konsep gambar dan prompt siap pakai untuk kampanye visual kamu."
+                />
+                <FeatureRow
+                  icon={<Code2 className="h-4 w-4" />}
+                  title="Debug & snippet kode"
+                  description="Tanya masalah coding, dapatkan penjelasan plus contoh kode yang bisa dicoba."
                 />
                 <FeatureRow
                   icon={<Mic className="h-4 w-4" />}
-                  title="Billing Indonesia-ready"
-                  description="Tripay & Midtrans dengan pembayaran bank transfer, e-wallet, dan QRIS."
+                  title="Transkrip meeting otomatis"
+                  description="Ubah rekaman meeting jadi catatan rapi dengan action item dan ringkasan."
                 />
               </div>
 
               <div className="mt-6 rounded-lg bg-muted p-4 text-xs text-muted-foreground">
                 <p className="font-medium text-foreground">
-                  Siap dipasang di production
+                  Satu akun, banyak kemampuan AI
                 </p>
                 <p className="mt-1">
-                  Termasuk admin panel lengkap, RLS Supabase, dan panduan deploy
-                  ke Vercel.
+                  Nusanexus menggabungkan berbagai model AI dan preset dalam satu
+                  antarmuka; kamu cukup fokus pada pekerjaan, bukan teknologinya.
                 </p>
               </div>
             </div>
@@ -180,44 +178,45 @@ export default function HomePage() {
         <section className="mt-20 space-y-8">
           <div className="text-center">
             <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              Semua fitur yang kamu butuhkan untuk SaaS AI modern
+              Jadikan AI teman kerja sehari-hari
             </h2>
             <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-              Nusanexus menyatukan seluruh stack: AI, multi-tenant workspace,
-              billing, dan admin panel dalam satu platform.
+              Dari ide awal sampai eksekusi, Nusanexus menemani proses kamu dengan
+              kumpulan AI writer, designer, coder, dan asisten riset dalam satu
+              dashboard.
             </p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-3">
             <FeatureCard
               icon={<PenSquare className="h-5 w-5" />}
-              title="AI konten multi-channel"
-              description="Writer, chat, dan preset yang bisa kamu kurasi sendiri untuk berbagai use case pelanggan."
+              title="Penulisan & konten"
+              description="Brief singkat, hasil panjang. Artikel, skrip video, email, dan copy ditulis dalam gaya yang bisa kamu atur."
             />
             <FeatureCard
               icon={<ImageIcon className="h-5 w-5" />}
-              title="Gambar & brand asset"
-              description="Generate visual untuk social media, iklan, dan desain landing tanpa keluar dari platform."
+              title="Desain & gambar"
+              description="Buat referensi visual, moodboard, atau materi kampanye dengan prompt bahasa Indonesia."
             />
             <FeatureCard
               icon={<Code2 className="h-5 w-5" />}
-              title="Dev-friendly"
-              description="Next.js 14 + Supabase + Tailwind + shadcn/ui. Mudah di-extend dan diintegrasikan."
+              title="Coding & automation"
+              description="Tanya error, minta snippet, atau minta bantuan membuat script kecil untuk otomasi."
             />
             <FeatureCard
               icon={<MessageCircle className="h-5 w-5" />}
-              title="Workspace multi-tenant"
-              description="Pisahkan client dan tim dengan workspace terdedikasi, lengkap dengan role dan credit sharing."
+              title="Riset & ringkasan"
+              description="Minta rangkuman artikel, ide topik, atau struktur deck presentasi dengan cepat."
             />
             <FeatureCard
               icon={<Mic className="h-5 w-5" />}
-              title="Voice & transcription"
-              description="Bangun fitur podcast, dubbing, atau meeting notes berbasis TTS dan Whisper."
+              title="Voice & meeting notes"
+              description="Transkripsikan audio dan ubah menjadi catatan, outline, atau artikel lanjutan."
             />
             <FeatureCard
               icon={<Sparkles className="h-5 w-5" />}
-              title="Billing lokal & global"
-              description="Tripay & Midtrans untuk Indonesia. Skema subscription & credit yang fleksibel."
+              title="Terhubung ke banyak model"
+              description="Nusanexus memilih model AI yang tepat di belakang layar, kamu cukup mengirim tugas."
             />
           </div>
         </section>
@@ -227,28 +226,27 @@ export default function HomePage() {
           <div className="grid gap-8 md:grid-cols-2 md:items-center">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                Dibangun khusus untuk pasar Indonesia
+                Nyaman dipakai pengguna Indonesia
               </h2>
               <p className="mt-3 text-sm text-muted-foreground sm:text-base">
-                Nusanexus mengutamakan integrasi dengan payment gateway lokal,
-                tampilan harga dalam Rupiah, dan infrastrukur yang mudah
-                di-deploy ke Vercel + Supabase.
+                Bahasa, payment, dan flow di Nusanexus dirancang agar familiar untuk
+                pengguna di Indonesia – tanpa ribet kartu kredit luar negeri.
               </p>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
-                <li>- Tripay dan Midtrans siap pakai</li>
-                <li>- Pricing per plan dan credit packages dalam IDR</li>
-                <li>- Email auth, password reset, dan verifikasi built-in</li>
+                <li>- Antarmuka dan contoh prompt dalam Bahasa Indonesia</li>
+                <li>- Pembayaran melalui bank transfer, e-wallet, dan QRIS</li>
+                <li>- Harga paket dan credits dalam Rupiah, transparan dan jelas</li>
               </ul>
             </div>
             <div className="space-y-3 rounded-xl bg-muted p-5 text-sm text-muted-foreground">
               <p className="font-medium text-foreground">
-                Contoh alur user:
+                Contoh alur penggunaan:
               </p>
               <ol className="mt-2 list-decimal space-y-1 pl-4">
-                <li>Sign up dan buat workspace.</li>
-                <li>Pilih paket langganan atau beli credits satuan.</li>
-                <li>Gunakan writer, image, voice, dan chat dari satu dashboard.</li>
-                <li>Pantau pemakaian dan transaksi dari halaman Billing.</li>
+                <li>Sign up dan pilih paket yang sesuai kebutuhan.</li>
+                <li>Gunakan writer, image, chat, dan tools lain dari satu dashboard.</li>
+                <li>Simpan hasil penting ke Library agar mudah diakses kembali.</li>
+                <li>Pantau credits dan riwayat pembayaran dari halaman Billing.</li>
               </ol>
             </div>
           </div>
@@ -257,18 +255,18 @@ export default function HomePage() {
         {/* Final CTA */}
         <section className="mt-20 border-t pt-12 text-center">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Siap meluncurkan platform AI kamu sendiri?
+            Siap kerja bareng banyak AI dalam satu tempat?
           </h2>
           <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-            Mulai dengan akun gratis, sambungkan provider AI, dan atur pricing
-            sesuai model bisnismu.
+            Buat akun Nusanexus, kirim tugas pertama kamu, dan lihat bagaimana AI bisa
+            mempercepat pekerjaan harianmu.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-4">
             <Link
               href="/signup"
               className="rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow hover:opacity-90"
             >
-              Mulai sekarang
+              Mulai gunakan Nusanexus
             </Link>
             <Link
               href="/pricing"
