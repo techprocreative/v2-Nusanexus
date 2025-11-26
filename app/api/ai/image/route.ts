@@ -6,6 +6,7 @@ import {
     loadModelPricing,
     calculateSimpleCredits,
 } from '@/lib/ai/pricing';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
     try {
@@ -39,6 +40,15 @@ export async function POST(request: Request) {
 
         if (!prompt) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+        }
+
+        // Simple per-user rate limiting for image generation
+        const rate = await checkRateLimit(supabase, user.id, 'ai:image', 30, 60_000);
+        if (!rate.ok) {
+            return NextResponse.json(
+                { error: 'Rate limit exceeded. Please try again later.' },
+                { status: 429 }
+            );
         }
 
         // Load workspace credits

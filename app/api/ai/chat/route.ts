@@ -6,6 +6,7 @@ import {
     loadModelPricing,
     calculateLlmCredits,
 } from '@/lib/ai/pricing';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
     try {
@@ -33,6 +34,15 @@ export async function POST(request: Request) {
 
         if (!message) {
             return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+        }
+
+        // Simple per-user rate limiting for chat
+        const rate = await checkRateLimit(supabase, user.id, 'ai:chat', 60, 60_000);
+        if (!rate.ok) {
+            return NextResponse.json(
+                { error: 'Rate limit exceeded. Please try again later.' },
+                { status: 429 }
+            );
         }
 
         // Check workspace credits

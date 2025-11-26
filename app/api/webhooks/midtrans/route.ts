@@ -38,17 +38,34 @@ export async function POST(request: Request) {
             newStatus = 'failed';
         }
 
-        // Update transaction
-        await supabase
+        // Update transaction with idempotency: only transition to paid once
+        const { data: updatedRows, error: updateError } = await supabase
             .from('payment_transactions')
             .update({
                 status: newStatus,
                 paid_at: newStatus === 'paid' ? new Date().toISOString() : null,
                 payment_method: notification.payment_type,
             })
-            .eq('id', transaction.id);
+            .eq('id', transaction.id)
+            .neq('status', 'paid')
+            .select();
 
-        // If paid, process the transaction
+        if (updateError) {
+            console.error('Error updating transaction:', updateError);
+            return NextResponse.json(
+                { error: 'Failed to update transaction' },
+                { status: 500 }
+            );
+        }
+
+        const updatedTransaction = updatedRows?.[0];
+
+        // If no row was updated, transaction was already marked as paid; do nothing
+        if (!updatedTransaction) {
+            return NextResponse.json({ success: true });
+        }
+
+        // If paid, process the transaction (only once)
         if (newStatus === 'paid') {
             if (transaction.type === 'subscription') {
                 // Activate subscription
