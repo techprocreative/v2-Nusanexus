@@ -1,6 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import {
+    loadCreditsPerUsd,
+    loadModelPricing,
+    calculateSimpleCredits,
+} from '@/lib/ai/pricing';
 
 export async function POST(request: Request) {
     try {
@@ -42,65 +47,28 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Workspace not found' }, { status: 400 });
         }
 
-        // Load pricing settings from options table
-        const { data: optionsRows } = await supabase
-            .from('options')
-            .select('key, value')
-            .in('key', ['credits_per_usd']);
-
-        const options =
-            optionsRows?.reduce((acc: any, row: any) => {
-                acc[row.key] = row.value;
-                return acc;
-            }, {}) || {};
-
-        const creditsPerUsd =
-            typeof options.credits_per_usd === 'number'
-                ? options.credits_per_usd
-                : Number(options.credits_per_usd) || 100;
-
-        // Look up model pricing (provider cost) from ai_models
+        const creditsPerUsd = await loadCreditsPerUsd(supabase);
         const modelId = 'whisper-1';
 
-        const { data: modelRow } = await supabase
-            .from('ai_models')
-            .select(
-                `
-                input_cost,
-                provider:ai_providers(config)
-            `
-            )
-            .eq('model_id', modelId)
-            .eq('type', 'transcription')
-            .eq('status', 1)
-            .limit(1)
-            .single();
-
-        const providerInputCost =
-            typeof modelRow?.input_cost === 'number'
-                ? modelRow.input_cost
-                : Number(modelRow?.input_cost) || 0;
-
-        const markupMultiplier =
-            (modelRow as any)?.provider?.config?.markup_multiplier ?? 1.5;
+        const { providerInputCost, markupMultiplier } = await loadModelPricing(
+            supabase,
+            modelId,
+            'transcription'
+        );
 
         const fileSizeMb = file.size / (1024 * 1024);
-        let providerCostUsd = 0;
-        let platformCostUsd = 0;
-        let creditsNeeded: number;
 
-        if (providerInputCost > 0) {
-            // Treat input_cost as provider cost per MB of audio
-            providerCostUsd = providerInputCost * fileSizeMb;
-            platformCostUsd = providerCostUsd * markupMultiplier;
-            creditsNeeded = Math.max(
-                1,
-                Math.ceil(platformCostUsd * creditsPerUsd)
-            );
-        } else {
-            // Fallback fixed cost
-            creditsNeeded = 5;
-        }
+        const {
+            creditsUsed: creditsNeeded,
+            providerCostUsd,
+            platformCostUsd,
+        } = calculateSimpleCredits({
+            baseCostUnit: providerInputCost,
+            usageUnit: fileSizeMb,
+            creditsPerUsd,
+            markupMultiplier,
+            fallbackCredits: 5,
+        });
 
         if ((workspace.credit_count ?? 0) < creditsNeeded) {
             return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 });
