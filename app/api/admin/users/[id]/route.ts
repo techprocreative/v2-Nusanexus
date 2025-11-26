@@ -15,7 +15,7 @@ export async function GET(
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
@@ -26,7 +26,7 @@ export async function GET(
 
         // Get user details
         const { data: userData, error } = await supabase
-            .from('users')
+            .from('profiles')
             .select('*, workspaces!current_workspace_id(*)')
             .eq('id', params.id)
             .single();
@@ -78,7 +78,7 @@ export async function PATCH(
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
@@ -96,10 +96,10 @@ export async function PATCH(
             updates.status = status;
         }
 
-        // Update user
+        // Update user profile
         if (Object.keys(updates).length > 0) {
             const { error } = await supabase
-                .from('users')
+                .from('profiles')
                 .update(updates)
                 .eq('id', params.id);
 

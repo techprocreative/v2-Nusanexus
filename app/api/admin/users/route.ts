@@ -12,7 +12,7 @@ export async function GET(request: Request) {
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
@@ -28,11 +28,11 @@ export async function GET(request: Request) {
         const offset = (page - 1) * limit;
 
         let query = supabase
-            .from('users')
+            .from('profiles')
             .select('*, workspaces!current_workspace_id(name)', { count: 'exact' });
 
         if (search) {
-            query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
+            query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%`);
         }
 
         const { data: users, error, count } = await query

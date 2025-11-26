@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();

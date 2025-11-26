@@ -13,7 +13,7 @@ export default async function AdminDashboardPage() {
 
     // Check if user is admin
     const { data: profile } = await supabase
-        .from('users')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
@@ -46,11 +46,11 @@ export default async function AdminDashboardPage() {
 
     // Get user stats
     const { count: totalUsers } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*', { count: 'exact', head: true });
 
     const { count: activeUsers } = await supabase
-        .from('users')
+        .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
@@ -64,7 +64,7 @@ export default async function AdminDashboardPage() {
     // Get recent transactions
     const { data: recentTransactions } = await supabase
         .from('payment_transactions')
-        .select('*, users(email), payment_gateways(display_name)')
+        .select('*, profiles(first_name, last_name), payment_gateways(display_name)')
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -187,7 +187,11 @@ export default async function AdminDashboardPage() {
                             {recentTransactions.map((tx) => (
                                 <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-0">
                                     <div className="flex-1">
-                                        <p className="font-medium">{tx.users?.email || 'Unknown'}</p>
+                                        <p className="font-medium">
+                                            {tx.profiles
+                                                ? `${tx.profiles.first_name} ${tx.profiles.last_name}`.trim()
+                                                : 'Unknown user'}
+                                        </p>
                                         <p className="text-sm text-muted-foreground capitalize">
                                             {tx.type.replace('_', ' ')} • {tx.payment_gateways?.display_name || 'N/A'}
                                         </p>

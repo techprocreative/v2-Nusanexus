@@ -126,8 +126,12 @@ export default function AdminUsersPage() {
                                         <TableRow key={user.id}>
                                             <TableCell>
                                                 <div>
-                                                    <p className="font-medium">{user.name || 'No name'}</p>
-                                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                                    <p className="font-medium">
+                                                        {`${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || 'No name'}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {user.id}
+                                                    </p>
                                                 </div>
                                             </TableCell>
                                             <TableCell>

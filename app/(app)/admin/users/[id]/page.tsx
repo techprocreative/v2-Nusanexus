@@ -55,7 +55,7 @@ export default function AdminUserDetailPage() {
     const handleStatusToggle = async () => {
         setProcessing(true);
         try {
-            const newStatus = user.status === 'active' ? 'suspended' : 'active';
+            const newStatus = user.status === 'active' ? 'inactive' : 'active';
             const response = await fetch(`/api/admin/users/${params.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -150,7 +150,7 @@ export default function AdminUserDetailPage() {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label className="text-muted-foreground">Name</Label>
+                                   <<Label className="text-muted-foreground">Name</Label>
                                     <p className="font-medium">{user.name || 'No name'}</p>
                                 </div>
                                 <div>

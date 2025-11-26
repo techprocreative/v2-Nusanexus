@@ -237,6 +237,12 @@ export interface Database {
           renew_at: string | null
           reset_credits_at: string | null
           ended_at: string | null
+          -- Tripay/Midtrans billing fields
+          payment_gateway_id: string | null
+          external_subscription_id: string | null
+          current_period_start: string | null
+          current_period_end: string | null
+          cancel_at_period_end: boolean | null
         }
         Insert: {
           id?: string
@@ -258,6 +264,11 @@ export interface Database {
           renew_at?: string | null
           reset_credits_at?: string | null
           ended_at?: string | null
+          payment_gateway_id?: string | null
+          external_subscription_id?: string | null
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean | null
         }
         Update: {
           id?: string
@@ -279,6 +290,11 @@ export interface Database {
           renew_at?: string | null
           reset_credits_at?: string | null
           ended_at?: string | null
+          payment_gateway_id?: string | null
+          external_subscription_id?: string | null
+          current_period_start?: string | null
+          current_period_end?: string | null
+          cancel_at_period_end?: boolean | null
         }
       }
       orders: {
@@ -702,6 +718,202 @@ export interface Database {
           id?: string
           key?: string
           value?: Json | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      payment_gateways: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          is_active: boolean | null
+          is_sandbox: boolean | null
+          credentials_encrypted: string
+          settings: Json | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          is_active?: boolean | null
+          is_sandbox?: boolean | null
+          credentials_encrypted: string
+          settings?: Json | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          is_active?: boolean | null
+          is_sandbox?: boolean | null
+          credentials_encrypted?: string
+          settings?: Json | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      subscription_plans: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          monthly_credits: number
+          price: number
+          features: Json | null
+          is_active: boolean | null
+          sort_order: number | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          monthly_credits: number
+          price: number
+          features?: Json | null
+          is_active?: boolean | null
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          monthly_credits?: number
+          price?: number
+          features?: Json | null
+          is_active?: boolean | null
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      credit_packages: {
+        Row: {
+          id: string
+          name: string
+          credits: number
+          price: number
+          discount_percentage: number | null
+          is_active: boolean | null
+          sort_order: number | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          credits: number
+          price: number
+          discount_percentage?: number | null
+          is_active?: boolean | null
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          credits?: number
+          price?: number
+          discount_percentage?: number | null
+          is_active?: boolean | null
+          sort_order?: number | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      payment_transactions: {
+        Row: {
+          id: string
+          workspace_id: string | null
+          user_id: string | null
+          payment_gateway_id: string | null
+          external_transaction_id: string | null
+          payment_method: string | null
+          type: string
+          amount: number
+          status: string
+          subscription_id: string | null
+          credit_package_id: string | null
+          credits_purchased: number | null
+          payment_url: string | null
+          payment_instructions: Json | null
+          paid_at: string | null
+          expired_at: string | null
+          metadata: Json | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          workspace_id?: string | null
+          user_id?: string | null
+          payment_gateway_id?: string | null
+          external_transaction_id?: string | null
+          payment_method?: string | null
+          type: string
+          amount: number
+          status?: string
+          subscription_id?: string | null
+          credit_package_id?: string | null
+          credits_purchased?: number | null
+          payment_url?: string | null
+          payment_instructions?: Json | null
+          paid_at?: string | null
+          expired_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          workspace_id?: string | null
+          user_id?: string | null
+          payment_gateway_id?: string | null
+          external_transaction_id?: string | null
+          payment_method?: string | null
+          type?: string
+          amount?: number
+          status?: string
+          subscription_id?: string | null
+          credit_package_id?: string | null
+          credits_purchased?: number | null
+          payment_url?: string | null
+          payment_instructions?: Json | null
+          paid_at?: string | null
+          expired_at?: string | null
+          metadata?: Json | null
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      user_payment_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          preferred_gateway_id: string | null
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          preferred_gateway_id?: string | null
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          preferred_gateway_id?: string | null
           created_at?: string
           updated_at?: string | null
         }

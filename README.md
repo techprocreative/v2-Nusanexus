@@ -8,7 +8,7 @@ AI-Powered Content Platform built with Next.js 14 and Supabase.
 - **Database**: Supabase PostgreSQL
 - **Authentication**: Supabase Auth
 - **Storage**: Supabase Storage
-- **Payments**: Stripe
+- **Payments**: Tripay, Midtrans
 - **AI**: OpenAI, Anthropic
 - **Styling**: TailwindCSS
 
@@ -19,7 +19,7 @@ AI-Powered Content Platform built with Next.js 14 and Supabase.
 - Node.js 18+
 - pnpm/npm/yarn
 - Supabase account
-- Stripe account (for payments)
+- Tripay and/or Midtrans account (for payments)
 - OpenAI API key
 
 ### Installation
@@ -86,8 +86,8 @@ aikeedo-nextjs/
 ├── lib/                   # Utilities
 │   ├── supabase/         # Supabase client
 │   ├── ai/               # AI integrations
-│   ├── billing/          # Stripe integration
-│   └── storage/          # File storage
+│   ├── payment/          # Payment gateway integrations (Tripay, Midtrans)
+│   storage
 ├── types/                 # TypeScript types
 └── supabase/
     └── migrations/        # SQL migrations
@@ -98,7 +98,7 @@ aikeedo-nextjs/
 - User authentication (email/password)
 - Multi-tenant workspaces
 - AI content generation (text, images, audio)
-- Subscription billing with Stripe
+- Subscription billing via local gateways (Tripay, Midtrans)
 - Credit-based usage system
 - File storage and management
 - Admin panel
@@ -132,11 +132,12 @@ See `.env.local.example` for all required environment variables.
 3. Add environment variables
 4. Deploy
 
-### Stripe Webhook
+### Payment Gateway Webhooks
 
-After deployment, configure your Stripe webhook:
-- Endpoint: `https://your-domain.com/api/billing/webhook`
-- Events: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_succeeded`
+After deployment, configure your payment gateway webhooks:
+
+- Tripay Callback URL: `https://your-domain.com/api/webhooks/tripay`
+- Midtrans Notification URL: `https://your-domain.com/api/webhooks/midtrans`
 
 ## License
 
