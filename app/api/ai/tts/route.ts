@@ -5,7 +5,9 @@ import { getAIClient } from '@/lib/ai/provider-client';
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -34,15 +36,75 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Text is required' }, { status: 400 });
         }
 
-        // Check workspace credits
+        // Load workspace credits
         const { data: workspace } = await supabase
             .from('workspaces')
             .select('credit_count')
             .eq('id', profile.current_workspace_id)
             .single();
 
-        const creditsNeeded = Math.ceil(text.length / 1000); // 1 credit per 1000 chars
-        if (!workspace || (workspace.credit_count ?? 0) < creditsNeeded) {
+        if (!workspace) {
+            return NextResponse.json({ error: 'Workspace not found' }, { status: 400 });
+        }
+
+        // Load pricing settings from options table
+        const { data: optionsRows } = await supabase
+            .from('options')
+            .select('key, value')
+            .in('key', ['credits_per_usd']);
+
+        const options =
+            optionsRows?.reduce((acc: any, row: any) => {
+                acc[row.key] = row.value;
+                return acc;
+            }, {}) || {};
+
+        const creditsPerUsd =
+            typeof options.credits_per_usd === 'number'
+                ? options.credits_per_usd
+                : Number(options.credits_per_usd) || 100;
+
+        // Look up model pricing (provider cost) from ai_models
+        const { data: modelRow } = await supabase
+            .from('ai_models')
+            .select(
+                `
+                input_cost,
+                provider:ai_providers(config)
+            `
+            )
+            .eq('model_id', model)
+            .eq('type', 'tts')
+            .eq('status', 1)
+            .limit(1)
+            .single();
+
+        const providerInputCost =
+            typeof modelRow?.input_cost === 'number'
+                ? modelRow.input_cost
+                : Number(modelRow?.input_cost) || 0;
+
+        const markupMultiplier =
+            (modelRow as any)?.provider?.config?.markup_multiplier ?? 1.5;
+
+        let providerCostUsd = 0;
+        let platformCostUsd = 0;
+        let creditsNeeded: number;
+
+        if (providerInputCost > 0) {
+            // Treat input_cost as provider cost per 1000 characters
+            providerCostUsd = providerInputCost * (text.length / 1000);
+            platformCostUsd = providerCostUsd * markupMultiplier;
+            creditsNeeded = Math.max(
+                1,
+                Math.ceil(platformCostUsd * creditsPerUsd)
+            );
+        } else {
+            // Fallback: 1 credit per 1000 characters
+            creditsNeeded = Math.ceil(text.length / 1000);
+        }
+
+        if ((workspace.credit_count ?? 0) < creditsNeeded) {
             return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 });
         }
 
@@ -74,7 +136,9 @@ export async function POST(request: Request) {
         }
 
         // Get public URL
-        const { data: { publicUrl } } = supabase.storage
+        const {
+            data: { publicUrl },
+        } = supabase.storage
             .from('audio')
             .getPublicUrl(uploadData.path);
 
@@ -114,6 +178,13 @@ export async function POST(request: Request) {
             audioUrl: publicUrl,
             usage: {
                 credits: creditsNeeded,
+                pricing: {
+                    provider_input_cost: providerInputCost,
+                    provider_cost_usd: providerCostUsd,
+                    platform_cost_usd: platformCostUsd,
+                    markup_multiplier: markupMultiplier,
+                    credits_per_usd: creditsPerUsd,
+                },
             },
         });
     } catch (error: any) {
