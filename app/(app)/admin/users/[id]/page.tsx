@@ -150,10 +150,9 @@ export default function AdminUserDetailPage() {
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                   <<Label className="text-muted-foreground">Name</Label>
-                                    <p className="font-medium">{user.name || 'No name'}</p>
-                                </div>
-                                <div>
+                                   <<Label className="text-muted-foreground">Na</</Label>
+                                   <<p className="font-medium">
+                                        {`${user.first_name ?? ''} ${                              <div>
                                     <Label className="text-muted-foreground">Email</Label>
                                     <p className="font-medium">{user.email}</p>
                                 </div>
@@ -167,8 +166,43 @@ export default function AdminUserDetailPage() {
                                 </div>
                                 <div>
                                     <Label className="text-muted-foreground">Role</Label>
-                                    <div>
+                                    <div className="flex items-center gap-2">
                                         <Badge variant="outline">{user.role}</Badge>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={processing}
+                                            onClick={async () => {
+                                                try {
+                                                    setProcessing(true);
+                                                    const newRole = user.role === 'admin' ? 'user' : 'admin';
+                                                    const response = await fetch(`/api/admin/users/${params.id}`, {
+                                                        method: 'PATCH',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ role: newRole }),
+                                                    });
+                                                    if (!response.ok) {
+                                                        throw new Error('Failed to update role');
+                                                    }
+                                                    toast({
+                                                        title: 'Success',
+                                                        description: `Role updated to ${newRole}`,
+                                                    });
+                                                    fetchUserDetails();
+                                                } catch (error) {
+                                                    toast({
+                                                        title: 'Error',
+                                                        description: 'Failed to update user role',
+                                                        variant: 'destructive',
+                                                    });
+                                                } finally {
+                                                    setProcessing(false);
+                                                }
+                                            }}
+                                        >
+                                            {user.role === 'admin' ? 'Make User' : 'Make Admin'}
+                                        </Button>
                                     </div>
                                 </div>
                                 <div>
@@ -274,6 +308,41 @@ export default function AdminUserDetailPage() {
                             >
                                 {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                                 {user.status === 'active' ? 'Suspend User' : 'Activate User'}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full"
+                                disabled={processing}
+                                onClick={async () => {
+                                    if (!confirm('Are you sure you want to permanently delete this user?')) {
+                                        return;
+                                    }
+                                    try {
+                                        setProcessing(true);
+                                        const response = await fetch(`/api/admin/users/${params.id}`, {
+                                            method: 'DELETE',
+                                        });
+                                        if (!response.ok) {
+                                            const data = await response.json();
+                                            throw new Error(data.error || 'Failed to delete user');
+                                        }
+                                        toast({
+                                            title: 'User deleted',
+                                            description: 'The user has been removed successfully',
+                                        });
+                                        router.push('/admin/users');
+                                    } catch (error: any) {
+                                        toast({
+                                            title: 'Error',
+                                            description: error.message || 'Failed to delete user',
+                                            variant: 'destructive',
+                                        });
+                                    } finally {
+                                        setProcessing(false);
+                                    }
+                                }}
+                            >
+                                Delete User
                             </Button>
                         </CardContent>
                     </Card>

@@ -75,6 +75,14 @@ export default function AdminUsersPage() {
                     <h1 className="text-3xl font-bold">User Management</h1>
                     <p className="text-muted-foreground">Manage all users in the system</p>
                 </div>
+                <div className="flex items-center gap-2">
+                    <Button asChild variant="outline">
+                        <a href="/api/admin/users/export">Export CSV</a>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/admin/users/new">Create User</Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Search */}
