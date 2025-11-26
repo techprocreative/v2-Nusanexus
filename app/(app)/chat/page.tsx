@@ -37,6 +37,15 @@ export default function ChatPage() {
         scrollToBottom();
     }, [messages]);
 
+    useEffect(() => {
+        if (currentConversationId) {
+            fetchMessages(currentConversationId);
+        } else {
+            setMessages([]);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentConversationId]);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -50,6 +59,23 @@ export default function ChatPage() {
             }
         } catch (error) {
             console.error('Error fetching conversations:', error);
+        }
+    };
+
+    const fetchMessages = async (conversationId: string) => {
+        try {
+            const response = await fetch(`/api/conversations/${conversationId}/messages`);
+            const data = await response.json();
+            if (response.ok) {
+                const loadedMessages =
+                    (data.messages || []).map((m: any) => ({
+                        role: m.role as 'user' | 'assistant',
+                        content: m.content as string,
+                    })) || [];
+                setMessages(loadedMessages);
+            }
+        } catch (error) {
+            console.error('Error fetching messages:', error);
         }
     };
 
