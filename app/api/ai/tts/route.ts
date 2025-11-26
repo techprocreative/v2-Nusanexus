@@ -1,18 +1,26 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import {
+    loadCreditsPerUsd,
+    loadModelPricing,
+    calculateSimpleCredits,
+} from '@/lib/ai/pricing';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('current_workspace_id')
             .eq('id', user.id)
             .single();
@@ -34,15 +42,46 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Text is required' }, { status: 400 });
         }
 
-        // Check workspace credits
+        // Simple per-user rate limiting for TTS
+        const rate = await checkRateLimit(supabase, user.id, 'ai:tts', 30, 60_000);
+        if (!rate.ok) {
+            return NextResponse.json(
+                { error: 'Rate limit exceeded. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
+        // Load workspace credits
         const { data: workspace } = await supabase
             .from('workspaces')
             .select('credit_count')
             .eq('id', profile.current_workspace_id)
             .single();
 
-        const creditsNeeded = Math.ceil(text.length / 1000); // 1 credit per 1000 chars
-        if (!workspace || (workspace.credit_count ?? 0) < creditsNeeded) {
+        if (!workspace) {
+            return NextResponse.json({ error: 'Workspace not found' }, { status: 400 });
+        }
+
+        const creditsPerUsd = await loadCreditsPerUsd(supabase);
+        const { providerInputCost, markupMultiplier } = await loadModelPricing(
+            supabase,
+            model,
+            'tts'
+        );
+
+        const {
+            creditsUsed: creditsNeeded,
+            providerCostUsd,
+            platformCostUsd,
+        } = calculateSimpleCredits({
+            baseCostUnit: providerInputCost,
+            usageUnit: text.length / 1000,
+            creditsPerUsd,
+            markupMultiplier,
+            fallbackCredits: Math.ceil(text.length / 1000),
+        });
+
+        if ((workspace.credit_count ?? 0) < creditsNeeded) {
             return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 });
         }
 
@@ -74,7 +113,9 @@ export async function POST(request: Request) {
         }
 
         // Get public URL
-        const { data: { publicUrl } } = supabase.storage
+        const {
+            data: { publicUrl },
+        } = supabase.storage
             .from('audio')
             .getPublicUrl(uploadData.path);
 
@@ -108,12 +149,34 @@ export async function POST(request: Request) {
             })
             .eq('id', profile.current_workspace_id);
 
+        // Record usage stats (credits) per day for this workspace
+        try {
+            const service = createServiceClient();
+            const today = new Date().toISOString().slice(0, 10);
+            await service.from('stats').insert({
+                workspace_id: profile.current_workspace_id,
+                type: 'usage',
+                date: today,
+                metric: creditsNeeded,
+                metadata: { source: 'ai_tts', model },
+            });
+        } catch (statsError) {
+            console.error('Failed to record usage stats (tts):', statsError);
+        }
+
         return NextResponse.json({
             success: true,
             item,
             audioUrl: publicUrl,
             usage: {
                 credits: creditsNeeded,
+                pricing: {
+                    provider_input_cost: providerInputCost,
+                    provider_cost_usd: providerCostUsd,
+                    platform_cost_usd: platformCostUsd,
+                    markup_multiplier: markupMultiplier,
+                    credits_per_usd: creditsPerUsd,
+                },
             },
         });
     } catch (error: any) {

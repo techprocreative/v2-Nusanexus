@@ -154,54 +154,68 @@ export default function LibraryPage() {
             const Icon = typeIcons[item.type] || FileText;
             const colorClass = typeColors[item.type] || 'bg-gray-500';
 
+            const showWriterAction =
+              item.type === 'document' || item.type === 'code';
+
             return (
-              <Link key={item.id} href={`/library/${item.id}`}>
-                <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`${colorClass} p-2 rounded-lg text-white`}>
-                        <Icon className="h-5 w-5" />
-                      </div>
-                      <Badge variant="secondary" className="text-xs capitalize">
-                        {item.type}
+              <Card
+                key={item.id}
+                className="h-full hover:shadow-lg transition-shadow"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`${colorClass} p-2 rounded-lg text-white`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <Badge variant="secondary" className="text-xs capitalize">
+                      {item.type}
+                    </Badge>
+                  </div>
+
+                  <h3 className="font-semibold mb-2 line-clamp-2">
+                    {item.title || 'Untitled'}
+                  </h3>
+
+                  {item.type === 'image' ? (
+                    <div className="aspect-video bg-muted rounded-lg mb-3 overflow-hidden">
+                      <img
+                        src={item.content}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
+                      {item.content}
+                    </p>
+                  )}
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                    {item.used_credit_count > 0 && (
+                      <span>{item.used_credit_count} credits</span>
+                    )}
+                  </div>
+
+                  {item.presets && (
+                    <div className="mt-2">
+                      <Badge variant="outline" className="text-xs">
+                        {item.presets.title}
                       </Badge>
                     </div>
+                  )}
 
-                    <h3 className="font-semibold mb-2 line-clamp-2">
-                      {item.title || 'Untitled'}
-                    </h3>
-
-                    {item.type === 'image' ? (
-                      <div className="aspect-video bg-muted rounded-lg mb-3 overflow-hidden">
-                        <img
-                          src={item.content}
-                          alt={item.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground line-clamp-3 mb-3">
-                        {item.content}
-                      </p>
-                    )}
-
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>{new Date(item.created_at).toLocaleDateString()}</span>
-                      {item.used_credit_count > 0 && (
-                        <span>{item.used_credit_count} credits</span>
-                      )}
+                  {showWriterAction && (
+                    <div className="mt-4 flex justify-end">
+                      <Link href={`/writer?fromLibrary=${item.id}`}>
+                        <Button variant="outline" size="xs">
+                          Open in Writer
+                        </Button>
+                      </Link>
                     </div>
-
-                    {item.presets && (
-                      <div className="mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {item.presets.title}
-                        </Badge>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </Link>
+                  )}
+                </CardContent>
+              </Card>
             );
           })}
         </div>

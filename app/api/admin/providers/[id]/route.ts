@@ -68,7 +68,15 @@ export async function PATCH(
         }
 
         const body = await request.json();
-        const { display_name, base_url, api_key, status, priority, config } = body;
+        const {
+            display_name,
+            base_url,
+            api_key,
+            status,
+            priority,
+            config,
+            markup_multiplier,
+        } = body;
 
         const updateData: any = {};
 
@@ -76,7 +84,23 @@ export async function PATCH(
         if (base_url !== undefined) updateData.base_url = base_url;
         if (status !== undefined) updateData.status = status;
         if (priority !== undefined) updateData.priority = priority;
-        if (config !== undefined) updateData.config = config;
+
+        // Merge existing config with incoming config and markup multiplier if provided
+        if (config !== undefined || markup_multiplier !== undefined) {
+            const { data: existing } = await supabase
+                .from('ai_providers')
+                .select('config')
+                .eq('id', params.id)
+                .single();
+
+            const mergedConfig = {
+                ...(existing?.config || {}),
+                ...(config || {}),
+                ...(markup_multiplier !== undefined ? { markup_multiplier } : {}),
+            };
+
+            updateData.config = mergedConfig;
+        }
 
         // Only encrypt and update API key if provided
         if (api_key) {

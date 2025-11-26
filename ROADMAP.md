@@ -360,11 +360,11 @@ Migrasi Aikeedo dari PHP + MySQL ke Next.js 14 + Supabase.
 - [ ] Set up storage buckets
 - [ ] Configure RLS policies
 
-### 7.3 Stripe Production
-- [ ] Switch to live keys
-- [ ] Configure webhook endpoint
-- [ ] Set up products/prices
-- [ ] Test live checkout
+### 7.3 Payment Gateway Production (Tripay & Midtrans)
+- [ ] Switch Tripay/Midtrans credentials to live mode
+- [ ] Configure Tripay callback endpoint
+- [ ] Configure Midtrans notification endpoint
+- [ ] Test live subscription and credit purchase flows
 
 ### 7.4 Monitoring
 - [ ] Error tracking (Sentry)
@@ -388,7 +388,7 @@ Migrasi Aikeedo dari PHP + MySQL ke Next.js 14 + Supabase.
 | Database | Supabase PostgreSQL |
 | Auth | Supabase Auth |
 | Storage | Supabase Storage |
-| Payments | Stripe |
+| Payments | Tripay, Midtrans |
 | AI - Text | OpenAI GPT-4, Anthropic Claude |
 | AI - Image | OpenAI DALL-E 3 |
 | AI - Audio | OpenAI Whisper, TTS |
@@ -419,7 +419,7 @@ aikeedo-nextjs/
 ├── lib/
 │   ├── supabase/         # Supabase clients
 │   ├── ai/               # AI service integrations
-│   ├── billing/          # Stripe integration
+│   ├── payment/          # Paymentintegration
 │   └── storage/          # File storage utilities
 ├── types/                # TypeScript types
 ├── hooks/                # Custom React hooks

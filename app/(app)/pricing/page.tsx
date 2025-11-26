@@ -77,7 +77,7 @@ export default async function PricingPage() {
             </div>
 
             {/* Credit Packages */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-8" id="credits">
                 <h2 className="text-3xl font-bold mb-2">One-Time Credit Packages</h2>
                 <p className="text-muted-foreground">
                     Need extra credits? Purchase them anytime

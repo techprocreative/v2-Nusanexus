@@ -17,8 +17,8 @@ interface Model {
     model_id: string;
     display_name: string;
     context_length?: number;
-    input_cost_per_token?: number;
-    output_cost_per_token?: number;
+    input_cost?: number;
+    output_cost?: number;
     provider?: {
         display_name: string;
     };
@@ -39,7 +39,7 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
 
     const fetchModels = async () => {
         try {
-            const response = await fetch('/api/admin/models?type=llm');
+            const response = await fetch('/api/models?type=llm');
             const data = await response.json();
 
             if (response.ok) {
@@ -96,10 +96,10 @@ export function ModelSelector({ value, onChange }: ModelSelectorProps) {
                     {selectedModel.context_length && (
                         <p>Context: {selectedModel.context_length.toLocaleString()} tokens</p>
                     )}
-                    {selectedModel.input_cost_per_token && selectedModel.output_cost_per_token && (
+                    {selectedModel.input_cost && selectedModel.output_cost && (
                         <p>
-                            Cost: ${selectedModel.input_cost_per_token.toFixed(6)}/input token, $
-                            {selectedModel.output_cost_per_token.toFixed(6)}/output token
+                            Cost: ${selectedModel.input_cost.toFixed(6)}/input unit, $
+                            {selectedModel.output_cost.toFixed(6)}/output unit
                         </p>
                     )}
                 </div>

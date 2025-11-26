@@ -1,18 +1,26 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import {
+    loadCreditsPerUsd,
+    loadModelPricing,
+    calculateSimpleCredits,
+} from '@/lib/ai/pricing';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('current_workspace_id')
             .eq('id', user.id)
             .single();
@@ -34,15 +42,55 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
-        // Check workspace credits
+        // Simple per-user rate limiting for image generation
+        const rate = await checkRateLimit(supabase, user.id, 'ai:image', 30, 60_000);
+        if (!rate.ok) {
+            return NextResponse.json(
+                { error: 'Rate limit exceeded. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
+        // Load workspace credits
         const { data: workspace } = await supabase
             .from('workspaces')
             .select('credit_count')
             .eq('id', profile.current_workspace_id)
             .single();
 
-        if (!workspace || (workspace.credit_count ?? 0) < 10) {
-            return NextResponse.json({ error: 'Insufficient credits (minimum 10 required)' }, { status: 402 });
+        if (!workspace) {
+            return NextResponse.json({ error: 'Workspace not found' }, { status: 400 });
+        }
+
+        const creditsPerUsd = await loadCreditsPerUsd(supabase);
+        const { providerInputCost, markupMultiplier } = await loadModelPricing(
+            supabase,
+            model,
+            'image'
+        );
+
+        // Fallback manual credits based on size and quality (previous behavior)
+        let baseCreditsFallback = 10;
+        if (size === '1024x1792' || size === '1792x1024') baseCreditsFallback = 15;
+        if (quality === 'hd') baseCreditsFallback *= 2;
+
+        const {
+            creditsUsed: creditsNeeded,
+            providerCostUsd,
+            platformCostUsd,
+        } = calculateSimpleCredits({
+            baseCostUnit: providerInputCost,
+            usageUnit: 1,
+            creditsPerUsd,
+            markupMultiplier,
+            fallbackCredits: baseCreditsFallback,
+        });
+
+        if ((workspace.credit_count ?? 0) < creditsNeeded) {
+            return NextResponse.json(
+                { error: 'Insufficient credits' },
+                { status: 402 }
+            );
         }
 
         // Get AI client for image generation
@@ -80,14 +128,11 @@ export async function POST(request: Request) {
         }
 
         // Get public URL
-        const { data: { publicUrl } } = supabase.storage
+        const {
+            data: { publicUrl },
+        } = supabase.storage
             .from('images')
             .getPublicUrl(uploadData.path);
-
-        // Calculate credits (based on size and quality)
-        let creditsUsed = 10; // base cost
-        if (size === '1024x1792' || size === '1792x1024') creditsUsed = 15;
-        if (quality === 'hd') creditsUsed *= 2;
 
         // Save to library
         const { data: item, error: insertError } = await supabase
@@ -101,7 +146,7 @@ export async function POST(request: Request) {
                 content: publicUrl,
                 request_params: { prompt, model, size, quality },
                 model,
-                used_credit_count: creditsUsed,
+                used_credit_count: creditsNeeded,
             })
             .select()
             .single();
@@ -115,16 +160,38 @@ export async function POST(request: Request) {
         await supabase
             .from('workspaces')
             .update({
-                credit_count: (workspace.credit_count ?? 0) - creditsUsed,
+                credit_count: (workspace.credit_count ?? 0) - creditsNeeded,
             })
             .eq('id', profile.current_workspace_id);
+
+        // Record usage stats (credits) per day for this workspace
+        try {
+            const service = createServiceClient();
+            const today = new Date().toISOString().slice(0, 10);
+            await service.from('stats').insert({
+                workspace_id: profile.current_workspace_id,
+                type: 'usage',
+                date: today,
+                metric: creditsNeeded,
+                metadata: { source: 'ai_image', model },
+            });
+        } catch (statsError) {
+            console.error('Failed to record usage stats (image):', statsError);
+        }
 
         return NextResponse.json({
             success: true,
             item,
             imageUrl: publicUrl,
             usage: {
-                credits: creditsUsed,
+                credits: creditsNeeded,
+                pricing: {
+                    provider_input_cost: providerInputCost,
+                    provider_cost_usd: providerCostUsd,
+                    platform_cost_usd: platformCostUsd,
+                    markup_multiplier: markupMultiplier,
+                    credits_per_usd: creditsPerUsd,
+                },
             },
         });
     } catch (error: any) {

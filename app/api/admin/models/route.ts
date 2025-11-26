@@ -25,7 +25,12 @@ export async function GET(request: Request) {
 
         let query = supabase
             .from('ai_models')
-            .select('*, ai_providers(*)')
+            .select(
+                `
+        *,
+        provider:ai_providers(display_name)
+      `
+            )
             .order('display_name');
 
         if (type) {
@@ -34,10 +39,14 @@ export async function GET(request: Request) {
 
         const { data: models, error } = await query;
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching models (admin):', error);
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
 
-        return NextResponse.json(models || []);
+        return NextResponse.json({ models: models ?? [] });
     } catch (error: any) {
+        console.error('Error in admin models GET:', error);
         return NextResponse.json(
             { error: error.message || 'Failed to fetch models' },
             { status: 500 }

@@ -14,6 +14,7 @@ import { Sparkles } from 'lucide-react';
 export default function WriterPage() {
     const searchParams = useSearchParams();
     const presetId = searchParams.get('preset');
+    const fromLibraryId = searchParams.get('fromLibrary');
     const { toast } = useToast();
 
     const [prompt, setPrompt] = useState('');
@@ -30,6 +31,12 @@ export default function WriterPage() {
         }
     }, [presetId]);
 
+    useEffect(() => {
+        if (fromLibraryId) {
+            fetchLibraryItem(fromLibraryId);
+        }
+    }, [fromLibraryId]);
+
     const fetchPreset = async (id: string) => {
         try {
             const response = await fetch(`/api/presets/${id}`);
@@ -43,6 +50,25 @@ export default function WriterPage() {
             }
         } catch (error) {
             console.error('Error fetching preset:', error);
+        }
+    };
+
+    const fetchLibraryItem = async (id: string) => {
+        try {
+            const response = await fetch(`/api/library/${id}`);
+            const data = await response.json();
+
+            if (response.ok && data.item) {
+                // Use existing content as the starting prompt to refine or extend
+                if (data.item.content) {
+                    setPrompt(data.item.content);
+                }
+                if (data.item.model) {
+                    setModel(data.item.model);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching library item:', error);
         }
     };
 

@@ -40,7 +40,7 @@ export default function AdminTransactionsPage() {
                 ...(statusFilter !== 'all' && { status: statusFilter }),
             });
 
-            const response = await fetch(`/api/billing/transactions?${params}`);
+            const response = await fetch(`/api/admin/transactions?${params}`);
             const data = await response.json();
 
             if (response.ok) {

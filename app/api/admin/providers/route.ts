@@ -69,7 +69,17 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { name, display_name, type, base_url, api_key, status, priority, config } = body;
+        const {
+            name,
+            display_name,
+            type,
+            base_url,
+            api_key,
+            status,
+            priority,
+            config,
+            markup_multiplier,
+        } = body;
 
         // Validate required fields
         if (!name || !display_name || !type || !base_url || !api_key) {
@@ -82,6 +92,12 @@ export async function POST(request: Request) {
         // Encrypt API key
         const api_key_encrypted = encrypt(api_key);
 
+        // Merge config and markup multiplier
+        const mergedConfig = {
+            ...(config || {}),
+            ...(markup_multiplier !== undefined ? { markup_multiplier } : {}),
+        };
+
         // Create provider
         const { data: provider, error } = await supabase
             .from('ai_providers')
@@ -93,7 +109,7 @@ export async function POST(request: Request) {
                 api_key_encrypted,
                 status: status ?? 1,
                 priority: priority ?? 0,
-                config: config || {},
+                config: mergedConfig,
             })
             .select()
             .single();

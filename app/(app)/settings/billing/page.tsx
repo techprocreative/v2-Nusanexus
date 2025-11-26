@@ -13,7 +13,7 @@ export default async function BillingSettingsPage() {
     }
 
     const { data: profile } = await supabase
-        .from('users')
+        .from('profiles')
         .select('current_workspace_id')
         .eq('id', user.id)
         .single();

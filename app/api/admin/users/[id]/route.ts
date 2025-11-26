@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 
 export async function GET(
@@ -7,7 +7,9 @@ export async function GET(
 ) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -15,7 +17,7 @@ export async function GET(
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
@@ -24,9 +26,9 @@ export async function GET(
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        // Get user details
+        // Get user details from profiles + current workspace
         const { data: userData, error } = await supabase
-            .from('users')
+            .from('profiles')
             .select('*, workspaces!current_workspace_id(*)')
             .eq('id', params.id)
             .single();
@@ -35,7 +37,21 @@ export async function GET(
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        // Get user's subscriptions
+        // Get auth user info (email, last_sign_in_at) via service client
+        const service = createServiceClient();
+        const { data: authData, error: authError } = await service.auth.admin.getUserById(params.id);
+
+        if (authError) {
+            console.error('Error fetching auth user:', authError);
+        }
+
+        const enrichedUser = {
+            ...userData,
+            email: authData?.user?.email ?? null,
+            last_sign_in_at: authData?.user?.last_sign_in_at ?? null,
+        };
+
+        // Get user's subscriptions (Tripay/Midtrans billing schema)
         const { data: subscriptions } = await supabase
             .from('subscriptions')
             .select('*, subscription_plans(*)')
@@ -51,7 +67,7 @@ export async function GET(
             .limit(10);
 
         return NextResponse.json({
-            user: userData,
+            user: enrichedUser,
             subscriptions,
             transactions,
         });
@@ -70,7 +86,9 @@ export async function PATCH(
 ) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -78,7 +96,7 @@ export async function PATCH(
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
@@ -88,18 +106,21 @@ export async function PATCH(
         }
 
         const body = await request.json();
-        const { status, creditAdjustment, workspaceId } = body;
+        const { status, role, creditAdjustment, workspaceId } = body;
 
         const updates: any = {};
 
         if (status) {
             updates.status = status;
         }
+        if (role) {
+            updates.role = role;
+        }
 
-        // Update user
+        // Update user profile
         if (Object.keys(updates).length > 0) {
             const { error } = await supabase
-                .from('users')
+                .from('profiles')
                 .update(updates)
                 .eq('id', params.id);
 
@@ -109,7 +130,7 @@ export async function PATCH(
         }
 
         // Handle credit adjustment
-        if (creditAdjustment && workspaceId) {
+        if (typeof creditAdjustment === 'number' && workspaceId) {
             const { error } = await supabase.rpc('adjust_workspace_credits', {
                 workspace_id: workspaceId,
                 amount: creditAdjustment,
@@ -126,7 +147,9 @@ export async function PATCH(
                 if (workspace) {
                     await supabase
                         .from('workspaces')
-                        .update({ credit_count: (workspace.credit_count || 0) + creditAdjustment })
+                        .update({
+                            credit_count: (workspace.credit_count || 0) + creditAdjustment,
+                        })
                         .eq('id', workspaceId);
                 }
             }
@@ -135,6 +158,57 @@ export async function PATCH(
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('Error updating user:', error);
+        return NextResponse.json(
+            { error: error.message || 'Internal server error' },
+            { status: 500 }
+        );
+    }
+}
+
+export async function DELETE(
+    request: Request,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const supabase = createClient();
+        const service = createServiceClient();
+
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        // Check if user is admin
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+        if (profile?.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        // Delete from auth.users via admin API
+        const { error: authError } = await service.auth.admin.deleteUser(params.id);
+
+        if (authError) {
+            console.error('Error deleting auth user:', authError);
+            return NextResponse.json(
+                { error: authError.message || 'Failed to delete auth user' },
+                { status: 500 }
+            );
+        }
+
+        // Profiles row should be removed by cascade if configured; ensure cleanup just in case
+        await supabase.from('profiles').delete().eq('id', params.id);
+
+        return NextResponse.json({ success: true });
+    } catch (error: any) {
+        console.error('Error deleting user:', error);
         return NextResponse.json(
             { error: error.message || 'Internal server error' },
             { status: 500 }

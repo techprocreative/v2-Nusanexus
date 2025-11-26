@@ -1,18 +1,26 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import {
+    loadCreditsPerUsd,
+    loadModelPricing,
+    calculateLlmCredits,
+} from '@/lib/ai/pricing';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('current_workspace_id')
             .eq('id', user.id)
             .single();
@@ -33,6 +41,15 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
         }
 
+        // Simple per-user rate limiting for code generation
+        const rate = await checkRateLimit(supabase, user.id, 'ai:code', 60, 60_000);
+        if (!rate.ok) {
+            return NextResponse.json(
+                { error: 'Rate limit exceeded. Please try again later.' },
+                { status: 429 }
+            );
+        }
+
         // Check workspace credits
         const { data: workspace } = await supabase
             .from('workspaces')
@@ -43,6 +60,10 @@ export async function POST(request: Request) {
         if (!workspace || (workspace.credit_count ?? 0) <= 0) {
             return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 });
         }
+
+        const creditsPerUsd = await loadCreditsPerUsd(supabase);
+        const { providerInputCost, providerOutputCost, markupMultiplier } =
+            await loadModelPricing(supabase, model, 'llm');
 
         // Get AI client
         const openai = await getAIClient('llm');
@@ -62,8 +83,24 @@ export async function POST(request: Request) {
         });
 
         const content = completion.choices[0]?.message?.content ?? '';
-        const tokensUsed = completion.usage?.total_tokens ?? 0;
-        const creditsUsed = Math.ceil(tokensUsed / 1000);
+        const usage = completion.usage;
+        const promptTokens = usage?.prompt_tokens ?? usage?.total_tokens ?? 0;
+        const completionTokens = usage?.completion_tokens ?? 0;
+
+        const {
+            creditsUsed,
+            tokensUsed,
+            providerCostUsd,
+            platformCostUsd,
+        } = calculateLlmCredits({
+            promptTokens,
+            completionTokens,
+            creditsPerUsd,
+            providerInputCost,
+            providerOutputCost,
+            markupMultiplier,
+            fallbackCostPerThousandTokensUsd: 0.002,
+        });
 
         // Extract code from markdown code blocks if present
         let code = content;
@@ -103,6 +140,21 @@ export async function POST(request: Request) {
             })
             .eq('id', profile.current_workspace_id);
 
+        // Record usage stats (credits) per day for this workspace
+        try {
+            const service = createServiceClient();
+            const today = new Date().toISOString().slice(0, 10);
+            await service.from('stats').insert({
+                workspace_id: profile.current_workspace_id,
+                type: 'usage',
+                date: today,
+                metric: creditsUsed,
+                metadata: { source: 'ai_code', model },
+            });
+        } catch (statsError) {
+            console.error('Failed to record usage stats (code):', statsError);
+        }
+
         return NextResponse.json({
             success: true,
             item,
@@ -111,6 +163,14 @@ export async function POST(request: Request) {
             usage: {
                 tokens: tokensUsed,
                 credits: creditsUsed,
+                pricing: {
+                    provider_input_cost: providerInputCost,
+                    provider_output_cost: providerOutputCost,
+                    provider_cost_usd: providerCostUsd,
+                    platform_cost_usd: platformCostUsd,
+                    markup_multiplier: markupMultiplier,
+                    credits_per_usd: creditsPerUsd,
+                },
             },
         });
     } catch (error: any) {

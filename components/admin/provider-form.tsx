@@ -24,6 +24,7 @@ interface ProviderFormData {
     api_key: string;
     status: number;
     priority: number;
+    markup_multiplier?: number;
 }
 
 interface ProviderFormProps {
@@ -45,6 +46,7 @@ export function ProviderForm({ provider, isEdit = false }: ProviderFormProps) {
         api_key: provider?.api_key || '',
         status: provider?.status ?? 1,
         priority: provider?.priority ?? 0,
+        markup_multiplier: (provider as any)?.config?.markup_multiplier ?? 1.5,
     });
 
     const handleChange = (field: keyof ProviderFormData, value: any) => {
@@ -188,6 +190,27 @@ export function ProviderForm({ provider, isEdit = false }: ProviderFormProps) {
                     />
                     <p className="text-xs text-muted-foreground">
                         Lower number = higher priority (0 is highest)
+                    </p>
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="markup_multiplier">Markup Multiplier</Label>
+                    <Input
+                        id="markup_multiplier"
+                        type="number"
+                        step="0.1"
+                        value={formData.markup_multiplier ?? ''}
+                        onChange={(e) =>
+                            handleChange(
+                                'markup_multiplier',
+                                e.target.value === ''
+                                    ? undefined
+                                    : parseFloat(e.target.value)
+                            )
+                        }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        Multiplier applied to provider cost (e.g. 1.5 = 50% markup)
                     </p>
                 </div>
 

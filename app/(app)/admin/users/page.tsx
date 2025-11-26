@@ -75,6 +75,14 @@ export default function AdminUsersPage() {
                     <h1 className="text-3xl font-bold">User Management</h1>
                     <p className="text-muted-foreground">Manage all users in the system</p>
                 </div>
+                <div className="flex items-center gap-2">
+                    <Button asChild variant="outline">
+                        <a href="/api/admin/users/export">Export CSV</a>
+                    </Button>
+                    <Button asChild>
+                        <Link href="/admin/users/new">Create User</Link>
+                    </Button>
+                </div>
             </div>
 
             {/* Search */}
@@ -126,8 +134,12 @@ export default function AdminUsersPage() {
                                         <TableRow key={user.id}>
                                             <TableCell>
                                                 <div>
-                                                    <p className="font-medium">{user.name || 'No name'}</p>
-                                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                                    <p className="font-medium">
+                                                        {`${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || 'No name'}
+                                                    </p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {user.id}
+                                                    </p>
                                                 </div>
                                             </TableCell>
                                             <TableCell>

@@ -8,7 +8,9 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const supabase = createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect('/login');
@@ -19,6 +21,8 @@ export default async function AppLayout({
     .select('*, workspaces!current_workspace_id(*)')
     .eq('id', user.id)
     .single();
+
+  const isAdmin = profile?.role === 'admin';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,6 +43,11 @@ export default async function AppLayout({
                 <Link href="/billing" className="text-gray-600 hover:text-gray-900">
                   Billing
                 </Link>
+                {isAdmin && (
+                  <Link href="/admin/dashboard" className="text-gray-600 hover:text-gray-900">
+                    Admin
+                  </Link>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-4">

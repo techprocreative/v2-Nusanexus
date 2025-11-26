@@ -1,11 +1,19 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import {
+  loadCreditsPerUsd,
+  loadModelPricing,
+  calculateLlmCredits,
+} from '@/lib/ai/pricing';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request: Request) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,6 +36,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
     }
 
+    // Simple per-user rate limiting for AI generation
+    const rate = await checkRateLimit(supabase, user.id, 'ai:generate', 60, 60_000);
+    if (!rate.ok) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     // Check workspace credits
     const { data: workspace } = await supabase
       .from('workspaces')
@@ -38,6 +55,10 @@ export async function POST(request: Request) {
     if (!workspace || (workspace.credit_count ?? 0) <= 0) {
       return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 });
     }
+
+    const creditsPerUsd = await loadCreditsPerUsd(supabase);
+    const { providerInputCost, providerOutputCost, markupMultiplier } =
+      await loadModelPricing(supabase, model, 'llm');
 
     // Get AI client from database configuration
     const openai = await getAIClient('llm');
@@ -50,8 +71,24 @@ export async function POST(request: Request) {
     });
 
     const content = completion.choices[0]?.message?.content ?? '';
-    const tokensUsed = completion.usage?.total_tokens ?? 0;
-    const creditsUsed = tokensUsed / 1000; // 1 credit per 1000 tokens
+    const usage = completion.usage;
+    const promptTokens = usage?.prompt_tokens ?? usage?.total_tokens ?? 0;
+    const completionTokens = usage?.completion_tokens ?? 0;
+
+    const {
+      creditsUsed,
+      tokensUsed,
+      providerCostUsd,
+      platformCostUsd,
+    } = calculateLlmCredits({
+      promptTokens,
+      completionTokens,
+      creditsPerUsd,
+      providerInputCost,
+      providerOutputCost,
+      markupMultiplier,
+      fallbackCostPerThousandTokensUsd: 0.002,
+    });
 
     // Save to library
     const { data: item, error: insertError } = await supabase
@@ -83,18 +120,41 @@ export async function POST(request: Request) {
       })
       .eq('id', profile.current_workspace_id);
 
+    // Record usage stats (credits) per day for this workspace
+    try {
+      const service = createServiceClient();
+      const today = new Date().toISOString().slice(0, 10);
+      await service.from('stats').insert({
+        workspace_id: profile.current_workspace_id,
+        type: 'usage',
+        date: today,
+        metric: creditsUsed,
+        metadata: { source: 'ai_generate', model },
+      });
+    } catch (statsError) {
+      console.error('Failed to record usage stats (generate):', statsError);
+    }
+
     return NextResponse.json({
       success: true,
       item,
       usage: {
         tokens: tokensUsed,
         credits: creditsUsed,
+        pricing: {
+          provider_input_cost: providerInputCost,
+          provider_output_cost: providerOutputCost,
+          provider_cost_usd: providerCostUsd,
+          platform_cost_usd: platformCostUsd,
+          markup_multiplier: markupMultiplier,
+          credits_per_usd: creditsPerUsd,
+        },
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate content' },
+      { error: error.message || 'Failed to generate content' },
       { status: 500 }
     );
   }

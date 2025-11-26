@@ -33,21 +33,38 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
         }
 
-        // Update transaction status
+        // Update transaction status with idempotency: only transition to paid once
         const newStatus = data.status === 'PAID' ? 'paid' :
             data.status === 'EXPIRED' ? 'expired' :
                 data.status === 'FAILED' ? 'failed' : 'pending';
 
-        await supabase
+        const { data: updatedRows, error: updateError } = await supabase
             .from('payment_transactions')
             .update({
                 status: newStatus,
-                paid_at: data.status === 'PAID' ? new Date().toISOString() : null,
+                paid_at: newStatus === 'paid' ? new Date().toISOString() : null,
                 payment_method: data.payment_method,
             })
-            .eq('id', transaction.id);
+            .eq('id', transaction.id)
+            .neq('status', 'paid')
+            .select();
 
-        // If paid, process the transaction
+        if (updateError) {
+            console.error('Error updating transaction:', updateError);
+            return NextResponse.json(
+                { error: 'Failed to update transaction' },
+                { status: 500 }
+            );
+        }
+
+        const updatedTransaction = updatedRows?.[0];
+
+        // If no row was updated, transaction was already marked as paid; do nothing
+        if (!updatedTransaction) {
+            return NextResponse.json({ success: true });
+        }
+
+        // If paid, process the transaction (only once)
         if (newStatus === 'paid') {
             if (transaction.type === 'subscription') {
                 // Activate subscription
@@ -69,21 +86,45 @@ export async function POST(request: Request) {
                     .single();
 
                 if (subscription) {
-                    await supabase
-                        .from('workspaces')
-                        .update({
-                            credit_count: supabase.raw(`credit_count + ${subscription.subscription_plans.monthly_credits}`),
-                        })
-                        .eq('id', transaction.workspace_id);
+                    const monthlyCredits = (subscription as any).subscription_plans?.monthly_credits ?? 0;
+
+                    if (monthlyCredits > 0 && transaction.workspace_id) {
+                        const { data: workspace } = await supabase
+                            .from('workspaces')
+                            .select('credit_count')
+                            .eq('id', transaction.workspace_id)
+                            .single();
+
+                        const currentCredits = workspace?.credit_count ?? 0;
+
+                        await supabase
+                            .from('workspaces')
+                            .update({
+                                credit_count: currentCredits + monthlyCredits,
+                            })
+                            .eq('id', transaction.workspace_id);
+                    }
                 }
             } else if (transaction.type === 'credit_purchase') {
                 // Add credits to workspace
-                await supabase
-                    .from('workspaces')
-                    .update({
-                        credit_count: supabase.raw(`credit_count + ${transaction.credits_purchased}`),
-                    })
-                    .eq('id', transaction.workspace_id);
+                const creditsToAdd = transaction.credits_purchased ?? 0;
+
+                if (creditsToAdd > 0 && transaction.workspace_id) {
+                    const { data: workspace } = await supabase
+                        .from('workspaces')
+                        .select('credit_count')
+                        .eq('id', transaction.workspace_id)
+                        .single();
+
+                    const currentCredits = workspace?.credit_count ?? 0;
+
+                    await supabase
+                        .from('workspaces')
+                        .update({
+                            credit_count: currentCredits + creditsToAdd,
+                        })
+                        .eq('id', transaction.workspace_id);
+                }
             }
         }
 
