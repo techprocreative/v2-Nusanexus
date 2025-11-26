@@ -113,6 +113,23 @@ export async function POST(request: Request) {
                         .eq('id', transaction.workspace_id);
                 }
             }
+
+            // Record revenue stats
+            try {
+                await supabase.from('stats').insert({
+                    workspace_id: transaction.workspace_id,
+                    type: transaction.type === 'subscription' ? 'subscription' : 'order',
+                    date: new Date().toISOString().slice(0, 10),
+                    metric: transaction.amount,
+                    metadata: {
+                        payment_gateway: transaction.payment_gateways?.name,
+                        status: newStatus,
+                        transaction_type: transaction.type,
+                    },
+                });
+            } catch (statsError) {
+                console.error('Failed to record revenue stats (Midtrans):', statsError);
+            }
         }
 
         return NextResponse.json({ success: true });

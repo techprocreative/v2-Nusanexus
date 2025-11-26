@@ -1,10 +1,11 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
 
 export async function POST(request: Request) {
   try {
     const supabase = createClient();
+    const serviceClient = createServiceClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
@@ -82,6 +83,23 @@ export async function POST(request: Request) {
         credit_count: (workspace.credit_count ?? 0) - creditsUsed,
       })
       .eq('id', profile.current_workspace_id);
+
+    // Track usage stats (credits)
+    try {
+      await serviceClient.from('stats').insert({
+        workspace_id: profile.current_workspace_id,
+        type: 'usage',
+        date: new Date().toISOString().slice(0, 10),
+        metric: creditsUsed,
+        metadata: {
+          feature: type,
+          model,
+          user_id: user.id,
+        },
+      });
+    } catch (statsError) {
+      console.error('Failed to record usage stats (generate):', statsError);
+    }
 
     return NextResponse.json({
       success: true,
