@@ -5,7 +5,9 @@ import { getAIClient } from '@/lib/ai/provider-client';
 export async function POST(request: Request) {
   try {
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -39,6 +41,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Insufficient credits' }, { status: 402 });
     }
 
+    // Load pricing settings from options table
+    const { data: optionsRows } = await supabase
+      .from('options')
+      .select('key, value')
+      .in('key', ['credits_per_usd']);
+
+    const options =
+      optionsRows?.reduce((acc: any, row: any) => {
+        acc[row.key] = row.value;
+        return acc;
+      }, {}) || {};
+
+    const creditsPerUsd =
+      typeof options.credits_per_usd === 'number'
+        ? options.credits_per_usd
+        : Number(options.credits_per_usd) || 100;
+
     // Get AI client from database configuration
     const openai = await getAIClient('llm');
 
@@ -50,8 +69,51 @@ export async function POST(request: Request) {
     });
 
     const content = completion.choices[0]?.message?.content ?? '';
-    const tokensUsed = completion.usage?.total_tokens ?? 0;
-    const creditsUsed = tokensUsed / 1000; // 1 credit per 1000 tokens
+    const usage = completion.usage;
+    const promptTokens = usage?.prompt_tokens ?? usage?.total_tokens ?? 0;
+    const completionTokens = usage?.completion_tokens ?? 0;
+    const tokensUsed = usage?.total_tokens ?? promptTokens + completionTokens;
+
+    // Look up model pricing (provider cost) from ai_models
+    const { data: modelRow } = await supabase
+      .from('ai_models')
+      .select(
+        `
+        input_cost,
+        output_cost,
+        provider:ai_providers(config)
+      `
+      )
+      .eq('model_id', model)
+      .eq('type', 'llm')
+      .eq('status', 1)
+      .limit(1)
+      .single();
+
+    const providerInputCost =
+      typeof modelRow?.input_cost === 'number'
+        ? modelRow.input_cost
+        : Number(modelRow?.input_cost) || 0;
+    const providerOutputCost =
+      typeof modelRow?.output_cost === 'number'
+        ? modelRow.output_cost
+        : Number(modelRow?.output_cost) || 0;
+
+    const markupMultiplier =
+      (modelRow as any)?.provider?.config?.markup_multiplier ?? 1.5;
+
+    const providerCostUsd =
+      (promptTokens / 1000) * providerInputCost +
+      (completionTokens / 1000) * providerOutputCost;
+
+    const platformCostUsd = providerCostUsd * markupMultiplier;
+
+    let creditsUsed = Math.max(
+      1,
+      Math.ceil(
+        (platformCostUsd || (tokensUsed / 1000) * 0.002) * creditsPerUsd
+      )
+    );
 
     // Save to library
     const { data: item, error: insertError } = await supabase
@@ -89,12 +151,20 @@ export async function POST(request: Request) {
       usage: {
         tokens: tokensUsed,
         credits: creditsUsed,
+        pricing: {
+          provider_input_cost: providerInputCost,
+          provider_output_cost: providerOutputCost,
+          provider_cost_usd: providerCostUsd,
+          platform_cost_usd: platformCostUsd,
+          markup_multiplier: markupMultiplier,
+          credits_per_usd: creditsPerUsd,
+        },
       },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Generation error:', error);
     return NextResponse.json(
-      { error: 'Failed to generate content' },
+      { error: error.message || 'Failed to generate content' },
       { status: 500 }
     );
   }
