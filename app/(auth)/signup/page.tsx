@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SignupPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get('ref') || undefined;
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -28,6 +31,7 @@ export default function SignupPage() {
         data: {
           first_name: firstName,
           last_name: lastName,
+          ref_code: refCode,
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },

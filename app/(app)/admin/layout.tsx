@@ -12,6 +12,8 @@ const navItems = [
     { href: '/admin/transactions', label: 'Transactions' },
     { href: '/admin/payment-gateways', label: 'Gateways' },
     { href: '/admin/providers', label: 'AI Providers' },
+    { href: '/admin/affiliates', label: 'Affiliates' },
+    { href: '/admin/payouts', label: 'Payouts' },
     { href: '/admin/settings', label: 'Settings' },
 ];
 
