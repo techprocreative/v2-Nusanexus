@@ -51,10 +51,10 @@ export async function GET(
             last_sign_in_at: authData?.user?.last_sign_in_at ?? null,
         };
 
-        // Get user's subscriptions (legacy subscriptions table + plans)
+        // Get user's subscriptions (Tripay/Midtrans billing schema)
         const { data: subscriptions } = await supabase
             .from('subscriptions')
-            .select('*, plans(*)')
+            .select('*, subscription_plans(*)')
             .eq('workspace_id', userData.current_workspace_id)
             .order('created_at', { ascending: false });
 
@@ -209,13 +209,6 @@ export async function DELETE(
         return NextResponse.json({ success: true });
     } catch (error: any) {
         console.error('Error deleting user:', error);
-        return NextResponse.json(
-            { error: error.message || 'Internal server error' },
-            { status: 500 }
-        );
-    }
-} catch (error: any) {
-        console.error('Error updating user:', error);
         return NextResponse.json(
             { error: error.message || 'Internal server error' },
             { status: 500 }

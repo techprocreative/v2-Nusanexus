@@ -44,10 +44,10 @@ export async function GET(
       .eq('workspace_id', params.id)
       .order('created_at', { ascending: true });
 
-    // Subscriptions (legacy)
+    // Subscriptions (Tripay/Midtrans billing schema)
     const { data: subscriptions } = await supabase
       .from('subscriptions')
-      .select('*, plans(*)')
+      .select('*, subscription_plans(*)')
       .eq('workspace_id', params.id)
       .order('created_at', { ascending: false });
 
