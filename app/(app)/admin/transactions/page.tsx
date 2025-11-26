@@ -31,6 +31,7 @@ export default function AdminTransactionsPage() {
 
     useEffect(() => {
         fetchTransactions();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [statusFilter, page]);
 
     const fetchTransactions = async () => {
@@ -40,7 +41,7 @@ export default function AdminTransactionsPage() {
                 ...(statusFilter !== 'all' && { status: statusFilter }),
             });
 
-            const response = await fetch(`/api/billing/transactions?${params}`);
+            const response = await fetch(`/api/admin/transactions?${params}`);
             const data = await response.json();
 
             if (response.ok) {
@@ -130,14 +131,18 @@ export default function AdminTransactionsPage() {
                                             Rp {tx.amount.toLocaleString('id-ID')}
                                         </TableCell>
                                         <TableCell>
-                                            {tx.credit_packages?.name || 'Subscription'}
+                                            {tx.payment_gateways?.display_name || 'N/A'}
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={
-                                                tx.status === 'paid' ? 'default' :
-                                                    tx.status === 'pending' ? 'secondary' :
-                                                        'destructive'
-                                            }>
+                                            <Badge
+                                                variant={
+                                                    tx.status === 'paid'
+                                                        ? 'default'
+                                                        : tx.status === 'pending'
+                                                        ? 'secondary'
+                                                        : 'destructive'
+                                                }
+                                            >
                                                 {tx.status}
                                             </Badge>
                                         </TableCell>

@@ -23,6 +23,7 @@ export default function AdminUserDetailPage() {
 
     useEffect(() => {
         fetchUserDetails();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [params.id]);
 
     const fetchUserDetails = async () => {
@@ -88,7 +89,7 @@ export default function AdminUserDetailPage() {
 
         setProcessing(true);
         try {
-            const amount = parseInt(creditAdjustment);
+            const amount = parseInt(creditAdjustment, 10);
             const response = await fetch(`/api/admin/users/${params.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
@@ -117,6 +118,13 @@ export default function AdminUserDetailPage() {
         } finally {
             setProcessing(false);
         }
+    };
+
+    const getFullName = (u: any) => {
+        const first = u.first_name || '';
+        const last = u.last_name || '';
+        const full = `${first} ${last}`.trim();
+        return full || 'No name';
     };
 
     if (loading) {
@@ -151,16 +159,20 @@ export default function AdminUserDetailPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label className="text-muted-foreground">Name</Label>
-                                    <p className="font-medium">{user.name || 'No name'}</p>
+                                    <p className="font-medium">{getFullName(user)}</p>
                                 </div>
                                 <div>
-                                    <Label className="text-muted-foreground">Email</Label>
-                                    <p className="font-medium">{user.email}</p>
+                                    <Label className="text-muted-foreground">User ID</Label>
+                                    <p className="font-medium break-all">{user.id}</p>
                                 </div>
                                 <div>
                                     <Label className="text-muted-foreground">Status</Label>
                                     <div>
-                                        <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                                        <Badge
+                                            variant={
+                                                user.status === 'active' ? 'default' : 'secondary'
+                                            }
+                                        >
                                             {user.status}
                                         </Badge>
                                     </div>
@@ -173,20 +185,26 @@ export default function AdminUserDetailPage() {
                                 </div>
                                 <div>
                                     <Label className="text-muted-foreground">Workspace</Label>
-                                    <p className="font-medium">{user.workspaces?.name || 'No workspace'}</p>
+                                    <p className="font-medium">
+                                        {user.workspaces?.name || 'No workspace'}
+                                    </p>
                                 </div>
                                 <div>
                                     <Label className="text-muted-foreground">Credits</Label>
-                                    <p className="font-medium">{user.workspaces?.credit_count?.toLocaleString() || 0}</p>
+                                    <p className="font-medium">
+                                        {Number(user.workspaces?.credit_count ?? 0).toLocaleString()}
+                                    </p>
                                 </div>
                                 <div>
                                     <Label className="text-muted-foreground">Created</Label>
-                                    <p className="font-medium">{new Date(user.created_at).toLocaleDateString()}</p>
+                                    <p className="font-medium">
+                                        {new Date(user.created_at).toLocaleDateString()}
+                                    </p>
                                 </div>
                                 <div>
-                                    <Label className="text-muted-foreground">Last Login</Label>
+                                    <Label className="text-muted-foreground">Language</Label>
                                     <p className="font-medium">
-                                        {user.last_sign_in_at ? new Date(user.last_sign_in_at).toLocaleDateString() : 'Never'}
+                                        {user.language ? user.language.toUpperCase() : 'N/A'}
                                     </p>
                                 </div>
                             </div>
@@ -203,21 +221,35 @@ export default function AdminUserDetailPage() {
                             {subscriptions.length > 0 ? (
                                 <div className="space-y-3">
                                     {subscriptions.map((sub) => (
-                                        <div key={sub.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                                        <div
+                                            key={sub.id}
+                                            className="flex items-center justify-between py-2 border-b last:border-0"
+                                        >
                                             <div>
-                                                <p className="font-medium">{sub.subscription_plans?.display_name}</p>
+                                                <p className="font-medium">
+                                                    {sub.subscription_plans?.display_name}
+                                                </p>
                                                 <p className="text-sm text-muted-foreground">
-                                                    {sub.subscription_plans?.monthly_credits} credits/month
+                                                    {sub.subscription_plans?.monthly_credits}{' '}
+                                                    credits/month
                                                 </p>
                                             </div>
-                                            <Badge variant={sub.status === 'active' ? 'default' : 'secondary'}>
+                                            <Badge
+                                                variant={
+                                                    sub.status === 'active'
+                                                        ? 'default'
+                                                        : 'secondary'
+                                                }
+                                            >
                                                 {sub.status}
                                             </Badge>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-center text-muted-foreground py-6">No subscriptions</p>
+                                <p className="text-center text-muted-foreground py-6">
+                                    No subscriptions
+                                </p>
                             )}
                         </CardContent>
                     </Card>
@@ -232,20 +264,31 @@ export default function AdminUserDetailPage() {
                             {transactions.length > 0 ? (
                                 <div className="space-y-3">
                                     {transactions.map((tx) => (
-                                        <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                                        <div
+                                            key={tx.id}
+                                            className="flex items-center justify-between py-2 border-b last:border-0"
+                                        >
                                             <div>
-                                                <p className="font-medium capitalize">{tx.type.replace('_', ' ')}</p>
+                                                <p className="font-medium capitalize">
+                                                    {tx.type.replace('_', ' ')}
+                                                </p>
                                                 <p className="text-sm text-muted-foreground">
                                                     {new Date(tx.created_at).toLocaleString()}
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="font-medium">Rp {tx.amount.toLocaleString('id-ID')}</p>
-                                                <Badge variant={
-                                                    tx.status === 'paid' ? 'default' :
-                                                        tx.status === 'pending' ? 'secondary' :
-                                                            'destructive'
-                                                }>
+                                                <p className="font-medium">
+                                                    Rp {tx.amount.toLocaleString('id-ID')}
+                                                </p>
+                                                <Badge
+                                                    variant={
+                                                        tx.status === 'paid'
+                                                            ? 'default'
+                                                            : tx.status === 'pending'
+                                                            ? 'secondary'
+                                                            : 'destructive'
+                                                    }
+                                                >
                                                     {tx.status}
                                                 </Badge>
                                             </div>
@@ -253,7 +296,9 @@ export default function AdminUserDetailPage() {
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-center text-muted-foreground py-6">No transactions</p>
+                                <p className="text-center text-muted-foreground py-6">
+                                    No transactions
+                                </p>
                             )}
                         </CardContent>
                     </Card>
@@ -272,7 +317,9 @@ export default function AdminUserDetailPage() {
                                 onClick={handleStatusToggle}
                                 disabled={processing}
                             >
-                                {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                {processing ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : null}
                                 {user.status === 'active' ? 'Suspend User' : 'Activate User'}
                             </Button>
                         </CardContent>
@@ -297,8 +344,14 @@ export default function AdminUserDetailPage() {
                                         Use positive for adding, negative for removing
                                     </p>
                                 </div>
-                                <Button type="submit" className="w-full" disabled={processing || !creditAdjustment}>
-                                    {processing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={processing || !creditAdjustment}
+                                >
+                                    {processing ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : null}
                                     Adjust Credits
                                 </Button>
                             </form>
