@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
 import {
@@ -124,6 +124,21 @@ export async function POST(request: Request) {
                 credit_count: (workspace.credit_count ?? 0) - creditsNeeded,
             })
             .eq('id', profile.current_workspace_id);
+
+        // Record usage stats (credits) per day for this workspace
+        try {
+            const service = createServiceClient();
+            const today = new Date().toISOString().slice(0, 10);
+            await service.from('stats').insert({
+                workspace_id: profile.current_workspace_id,
+                type: 'usage',
+                date: today,
+                metric: creditsNeeded,
+                metadata: { source: 'ai_transcribe', model: modelId },
+            });
+        } catch (statsError) {
+            console.error('Failed to record usage stats (transcribe):', statsError);
+        }
 
         return NextResponse.json({
             success: true,

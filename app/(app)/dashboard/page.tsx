@@ -48,6 +48,14 @@ export default async function DashboardPage() {
     .eq('workspace_id', workspace?.id ?? '')
     .gte('created_at', startOfMonth.toISOString());
 
+  // Load recent activities
+  const { data: activities } = await supabase
+    .from('activity_log')
+    .select('*, profiles(first_name, last_name)')
+    .eq('workspace_id', workspace?.id ?? '')
+    .order('created_at', { ascending: false })
+    .limit(10);
+
   // Load real credit usage stats for last 30 days
   const endDate = new Date();
   endDate.setHours(0, 0, 0, 0);
@@ -66,7 +74,9 @@ export default async function DashboardPage() {
 
   const usageMap = new Map<string, number>();
   (usageRows || []).forEach((row: any) => {
-    usageMap.set(row.date, Number(row.metric) || 0);
+    const key = row.date;
+    const value = Number(row.metric) || 0;
+    usageMap.set(key, (usageMap.get(key) || 0) + value);
   });
 
   const creditUsageData = Array.from({ length: 30 }, (_, i) => {
