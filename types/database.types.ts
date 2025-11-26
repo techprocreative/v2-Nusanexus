@@ -237,7 +237,7 @@ export interface Database {
           renew_at: string | null
           reset_credits_at: string | null
           ended_at: string | null
-          -- Tripay/Midtrans billing fields
+          // Tripay/Midtrans billing fields
           payment_gateway_id: string | null
           external_subscription_id: string | null
           current_period_start: string | null
@@ -916,6 +916,88 @@ export interface Database {
           preferred_gateway_id?: string | null
           created_at?: string
           updated_at?: string | null
+        }
+      }
+      ai_providers: {
+        Row: {
+          id: string
+          name: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          base_url: string
+          api_key_encrypted: string
+          status: number
+          priority: number
+          config: Json
+          created_at: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          base_url: string
+          api_key_encrypted: string
+          status?: number
+          priority?: number
+          config?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          display_name?: string
+          type?: 'llm' | 'image' | 'tts' | 'transcription'
+          base_url?: string
+          api_key_encrypted?: string
+          status?: number
+          priority?: number
+          config?: Json
+          created_at?: string
+          updated_at?: string | null
+        }
+      }
+      ai_models: {
+        Row: {
+          id: string
+          provider_id: string
+          model_id: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          context_length: number | null
+          input_cost: number | null
+          output_cost: number | null
+          status: number
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          provider_id: string
+          model_id: string
+          display_name: string
+          type: 'llm' | 'image' | 'tts' | 'transcription'
+          context_length?: number | null
+          input_cost?: number | null
+          output_cost?: number | null
+          status?: number
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          provider_id?: string
+          model_id?: string
+          display_name?: string
+          type?: 'llm' | 'image' | 'tts' | 'transcription'
+          context_length?: number | null
+          input_cost?: number | null
+          output_cost?: number | null
+          status?: number
+          metadata?: Json
+          created_at?: string
         }
       }
     }

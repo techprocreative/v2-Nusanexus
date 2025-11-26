@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         }
 
         // Get package details
-        const { data: package: creditPackage } = await supabase
+        const { data: creditPackage } = await supabase
             .from('credit_packages')
             .select('*')
             .eq('id', packageId)

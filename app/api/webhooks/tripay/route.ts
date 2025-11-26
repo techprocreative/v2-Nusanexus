@@ -69,21 +69,45 @@ export async function POST(request: Request) {
                     .single();
 
                 if (subscription) {
-                    await supabase
-                        .from('workspaces')
-                        .update({
-                            credit_count: supabase.raw(`credit_count + ${subscription.subscription_plans.monthly_credits}`),
-                        })
-                        .eq('id', transaction.workspace_id);
+                    const monthlyCredits = (subscription as any).subscription_plans?.monthly_credits ?? 0;
+
+                    if (monthlyCredits > 0 && transaction.workspace_id) {
+                        const { data: workspace } = await supabase
+                            .from('workspaces')
+                            .select('credit_count')
+                            .eq('id', transaction.workspace_id)
+                            .single();
+
+                        const currentCredits = workspace?.credit_count ?? 0;
+
+                        await supabase
+                            .from('workspaces')
+                            .update({
+                                credit_count: currentCredits + monthlyCredits,
+                            })
+                            .eq('id', transaction.workspace_id);
+                    }
                 }
             } else if (transaction.type === 'credit_purchase') {
                 // Add credits to workspace
-                await supabase
-                    .from('workspaces')
-                    .update({
-                        credit_count: supabase.raw(`credit_count + ${transaction.credits_purchased}`),
-                    })
-                    .eq('id', transaction.workspace_id);
+                const creditsToAdd = transaction.credits_purchased ?? 0;
+
+                if (creditsToAdd > 0 && transaction.workspace_id) {
+                    const { data: workspace } = await supabase
+                        .from('workspaces')
+                        .select('credit_count')
+                        .eq('id', transaction.workspace_id)
+                        .single();
+
+                    const currentCredits = workspace?.credit_count ?? 0;
+
+                    await supabase
+                        .from('workspaces')
+                        .update({
+                            credit_count: currentCredits + creditsToAdd,
+                        })
+                        .eq('id', transaction.workspace_id);
+                }
             }
         }
 

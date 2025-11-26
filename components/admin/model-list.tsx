@@ -31,9 +31,8 @@ interface Model {
     model_id: string;
     display_name: string;
     type: string;
-    input_cost_per_token?: number;
-    output_cost_per_token?: number;
-    cost_per_unit?: number;
+    input_cost?: number;
+    output_cost?: number;
     context_length?: number;
     status: number;
     provider?: {
@@ -60,7 +59,7 @@ export function ModelList({ models, type }: ModelListProps) {
             model.provider?.display_name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleUpdateModel = async () => {
+    const handleUpdateModel = async () =&gt; {
         if (!editingModel) return;
 
         setSaving(true);
@@ -69,10 +68,9 @@ export function ModelList({ models, type }: ModelListProps) {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model_id: editingModel.id,
-                    input_cost_per_token: editingModel.input_cost_per_token,
-                    output_cost_per_token: editingModel.output_cost_per_token,
-                    cost_per_unit: editingModel.cost_per_unit,
+                    id: editingModel.id,
+                    input_cost: editingModel.input_cost,
+                    output_cost: editingModel.output_cost,
                     status: editingModel.status,
                 }),
             });
@@ -161,17 +159,17 @@ export function ModelList({ models, type }: ModelListProps) {
                                     {type === 'llm' && (
                                         <>
                                             <TableCell className="font-mono text-xs">
-                                                {formatCost(model.input_cost_per_token)}
+                                                {formatCost(model.input_cost)}
                                             </TableCell>
                                             <TableCell className="font-mono text-xs">
-                                                {formatCost(model.output_cost_per_token)}
+                                                {formatCost(model.output_cost)}
                                             </TableCell>
                                             <TableCell>{model.context_length?.toLocaleString() || 'N/A'}</TableCell>
                                         </>
                                     )}
                                     {(type === 'image' || type === 'tts' || type === 'transcription') && (
                                         <TableCell className="font-mono text-xs">
-                                            {formatCost(model.cost_per_unit)}
+                                            {formatCost(model.input_cost)}
                                         </TableCell>
                                     )}
                                     <TableCell>
@@ -211,29 +209,29 @@ export function ModelList({ models, type }: ModelListProps) {
                             {type === 'llm' && (
                                 <>
                                     <div className="space-y-2">
-                                        <Label>Input Cost per Token ($)</Label>
+                                        <Label>Input Cost ($)</Label>
                                         <Input
                                             type="number"
                                             step="0.000001"
-                                            value={editingModel.input_cost_per_token || 0}
+                                            value={editingModel.input_cost || 0}
                                             onChange={(e) =>
                                                 setEditingModel({
                                                     ...editingModel,
-                                                    input_cost_per_token: parseFloat(e.target.value),
+                                                    input_cost: parseFloat(e.target.value),
                                                 })
                                             }
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Output Cost per Token ($)</Label>
+                                        <Label>Output Cost ($)</Label>
                                         <Input
                                             type="number"
                                             step="0.000001"
-                                            value={editingModel.output_cost_per_token || 0}
+                                            value={editingModel.output_cost || 0}
                                             onChange={(e) =>
                                                 setEditingModel({
                                                     ...editingModel,
-                                                    output_cost_per_token: parseFloat(e.target.value),
+                                                    output_cost: parseFloat(e.target.value),
                                                 })
                                             }
                                         />
@@ -247,11 +245,11 @@ export function ModelList({ models, type }: ModelListProps) {
                                     <Input
                                         type="number"
                                         step="0.000001"
-                                        value={editingModel.cost_per_unit || 0}
+                                        value={editingModel.input_cost || 0}
                                         onChange={(e) =>
                                             setEditingModel({
                                                 ...editingModel,
-                                                cost_per_unit: parseFloat(e.target.value),
+                                                input_cost: parseFloat(e.target.value),
                                             })
                                         }
                                     />

@@ -17,14 +17,14 @@ import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/components/ui/use-toast';
 import { Loader2, Volume2, Download } from 'lucide-react';
 
-const VOICES = [
-    { value: 'alloy', label: 'Alloy' },
-    { value: 'echo', label: 'Echo' },
-    { value: 'fable', label: 'Fable' },
-    { value: 'onyx', label: 'Onyx' },
-    { value: 'nova', label: 'Nova' },
-    { value: 'shimmer', label: 'Shimmer' },
-];
+interface VoiceOption {
+    id: string;
+    provider: string;
+    model: string;
+    external_id: string;
+    name: string;
+    sample_url?: string | null;
+}
 
 export default function VoicePage() {
     const searchParams = useSearchParams();
@@ -32,7 +32,9 @@ export default function VoicePage() {
     const { toast } = useToast();
 
     const [text, setText] = useState('');
-    const [voice, setVoice] = useState('alloy');
+    const [voice, setVoice] = useState('');
+    const [voices, setVoices] = useState<VoiceOption[]>([]);
+    const [voicesLoading, setVoicesLoading] = useState(true);
     const [speed, setSpeed] = useState(1.0);
     const [loading, setLoading] = useState(false);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
@@ -42,6 +44,8 @@ export default function VoicePage() {
         if (presetId) {
             fetchPreset(presetId);
         }
+        fetchVoices();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [presetId]);
 
     const fetchPreset = async (id: string) => {
@@ -57,6 +61,26 @@ export default function VoicePage() {
             }
         } catch (error) {
             console.error('Error fetching preset:', error);
+        }
+    };
+
+    const fetchVoices = async () => {
+        try {
+            setVoicesLoading(true);
+            const response = await fetch('/api/voices');
+            const data = await response.json();
+
+            if (response.ok) {
+                const list = (data.voices || []) as VoiceOption[];
+                setVoices(list);
+                if (!voice && list.length > 0) {
+                    setVoice(list[0].external_id);
+                }
+            }
+        } catch (error) {
+            console.error('Error fetching voices:', error);
+        } finally {
+            setVoicesLoading(false);
         }
     };
 
@@ -209,16 +233,41 @@ export default function VoicePage() {
                         <CardContent className="space-y-6">
                             <div className="space-y-2">
                                 <Label htmlFor="voice">Voice</Label>
-                                <Select value={voice} onValueChange={setVoice}>
+                                <Select
+                                    value={voice}
+                                    onValueChange={setVoice}
+                                    disabled={voicesLoading || voices.length === 0}
+                                >
                                     <SelectTrigger id="voice">
-                                        <SelectValue />
+                                        <SelectValue
+                                            placeholder={
+                                                voicesLoading
+                                                    ? 'Loading voices...'
+                                                    : 'Select a voice'
+                                            }
+                                        />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {VOICES.map((v) => (
-                                            <SelectItem key={v.value} value={v.value}>
-                                                {v.label}
-                                            </SelectItem>
-                                        ))}
+                                        {voicesLoading ? (
+                                            <div className="flex items-center justify-center py-4">
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            </div>
+                                        ) : voices.length === 0 ? (
+                                            <div className="py-4 text-center text-sm text-muted-foreground">
+                                                No voices available
+                                            </div>
+                                        ) : (
+                                            voices.map((v) => (
+                                                <SelectItem key={v.id} value={v.external_id}>
+                                                    <div className="flex items-center justify-between w-full">
+                                                        <span>{v.name}</span>
+                                                        <span className="text-xs text-muted-foreground">
+                                                            {v.provider}
+                                                        </span>
+                                                    </div>
+                                                </SelectItem>
+                                            ))
+                                        )}
                                     </SelectContent>
                                 </Select>
                             </div>
