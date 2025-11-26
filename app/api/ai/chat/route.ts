@@ -1,18 +1,28 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import { z } from 'zod';
+
+const ChatSchema = z.object({
+    conversationId: z.string().uuid().optional(),
+    message: z.string().min(1).max(8000),
+    model: z.string().optional(),
+});
 
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const serviceClient = createServiceClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('current_workspace_id')
             .eq('id', user.id)
             .single();
@@ -21,12 +31,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'No workspace selected' }, { status: 400 });
         }
 
-        const body = await request.json();
-        const { conversationId, message, model = 'gpt-3.5-turbo' } = body;
+        const json = await request.json().catch(() => null);
+        const parsed = ChatSchema.safeParse(json);
 
-        if (!message) {
-            return NextResponse.json({ error: 'Message is required' }, { status: 400 });
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Invalid request payload', details: parsed.error.flatten() },
+                { status: 400 }
+            );
         }
+
+        const { conversationId, message, model = 'gpt-3.5-turbo' } = parsed.data;
 
         // Check workspace credits
         const { data: workspace } = await supabase
@@ -124,6 +139,24 @@ export async function POST(request: Request) {
                 credit_count: (workspace.credit_count ?? 0) - creditsUsed,
             })
             .eq('id', profile.current_workspace_id);
+
+        // Track usage stats (chat)
+        try {
+            await serviceClient.from('stats').insert({
+                workspace_id: profile.current_workspace_id,
+                type: 'usage',
+                date: new Date().toISOString().slice(0, 10),
+                metric: creditsUsed,
+                metadata: {
+                    feature: 'chat',
+                    model,
+                    user_id: user.id,
+                    conversation_id: conversation.id,
+                },
+            });
+        } catch (statsError) {
+            console.error('Failed to record usage stats (chat):', statsError);
+        }
 
         return NextResponse.json({
             success: true,

@@ -1,18 +1,30 @@
-import { createClient } from '@/lib/supabase/server';
+import { createClient, createServiceClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getAIClient } from '@/lib/ai/provider-client';
+import { z } from 'zod';
+
+const TtsSchema = z.object({
+    text: z.string().min(1).max(10000),
+    voice: z.string().optional(),
+    model: z.string().optional(),
+    speed: z.number().min(0.5).max(2).optional(),
+    presetId: z.string().uuid().optional(),
+});
 
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const serviceClient = createServiceClient();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('current_workspace_id')
             .eq('id', user.id)
             .single();
@@ -21,18 +33,23 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'No workspace selected' }, { status: 400 });
         }
 
-        const body = await request.json();
+        const json = await request.json().catch(() => null);
+        const parsed = TtsSchema.safeParse(json);
+
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Invalid request payload', details: parsed.error.flatten() },
+                { status: 400 }
+            );
+        }
+
         const {
             text,
             voice = 'alloy',
             model = 'tts-1',
             speed = 1.0,
             presetId,
-        } = body;
-
-        if (!text) {
-            return NextResponse.json({ error: 'Text is required' }, { status: 400 });
-        }
+        } = parsed.data;
 
         // Check workspace credits
         const { data: workspace } = await supabase
@@ -107,6 +124,24 @@ export async function POST(request: Request) {
                 credit_count: (workspace.credit_count ?? 0) - creditsNeeded,
             })
             .eq('id', profile.current_workspace_id);
+
+        // Track usage stats (tts)
+        try {
+            await serviceClient.from('stats').insert({
+                workspace_id: profile.current_workspace_id,
+                type: 'usage',
+                date: new Date().toISOString().slice(0, 10),
+                metric: creditsNeeded,
+                metadata: {
+                    feature: 'tts',
+                    model,
+                    voice,
+                    user_id: user.id,
+                },
+            });
+        } catch (statsError) {
+            console.error('Failed to record usage stats (tts):', statsError);
+        }
 
         return NextResponse.json({
             success: true,

@@ -53,6 +53,22 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Link workspaces.subscription_id to the new subscriptions table (safe if constraint already exists)
+DO $
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_constraint
+    WHERE conname = 'fk_workspace_subscription'
+      AND conrelid = 'public.workspaces'::regclass
+  ) THEN
+    ALTER TABLE public.workspaces 
+      ADD CONSTRAINT fk_workspace_subscription 
+      FOREIGN KEY (subscription_id) REFERENCES public.subscriptions(id) ON DELETE SET NULL;
+  END IF;
+END;
+$;
+
 -- Credit packages (for one-time purchases)
 CREATE TABLE IF NOT EXISTS public.credit_packages (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -70,7 +86,7 @@ CREATE TABLE IF NOT EXISTS public.credit_packages (
 CREATE TABLE IF NOT EXISTS public.payment_transactions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   workspace_id UUID REFERENCES public.workspaces(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES public.users(id),
+  user_id UUID REFERENCES public.profiles(id),
   
   -- Payment gateway info
   payment_gateway_id UUID REFERENCES public.payment_gateways(id),
@@ -103,7 +119,7 @@ CREATE TABLE IF NOT EXISTS public.payment_transactions (
 -- User payment preferences
 CREATE TABLE IF NOT EXISTS public.user_payment_preferences (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE UNIQUE,
+  user_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE UNIQUE,
   preferred_gateway_id UUID REFERENCES public.payment_gateways(id),
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -134,7 +150,7 @@ CREATE POLICY "Admins can view payment gateways"
   ON public.payment_gateways FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM public.users
+      SELECT 1 FROM public.profiles
       WHERE id = auth.uid() AND role = 'admin'
     )
   );
@@ -143,7 +159,7 @@ CREATE POLICY "Admins can manage payment gateways"
   ON public.payment_gateways FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM public.users
+      SELECT 1 FROM public.profiles
       WHERE id = auth.uid() AND role = 'admin'
     )
   );
@@ -158,7 +174,7 @@ CREATE POLICY "Admins can manage plans"
   ON public.subscription_plans FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM public.users
+      SELECT 1 FROM public.profiles
       WHERE id = auth.uid() AND role = 'admin'
     )
   );
@@ -183,7 +199,7 @@ CREATE POLICY "Admins can manage credit packages"
   ON public.credit_packages FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM public.users
+      SELECT 1 FROM public.profiles
       WHERE id = auth.uid() AND role = 'admin'
     )
   );

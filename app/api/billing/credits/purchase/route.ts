@@ -1,18 +1,26 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { getPaymentGateway, getUserPreferredGateway } from '@/lib/payment/gateway-factory';
+import { z } from 'zod';
+
+const PurchaseCreditsSchema = z.object({
+    packageId: z.string().uuid(),
+    gatewayId: z.string().uuid().optional(),
+});
 
 export async function POST(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('current_workspace_id')
             .eq('id', user.id)
             .single();
@@ -21,15 +29,20 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'No workspace selected' }, { status: 400 });
         }
 
-        const body = await request.json();
-        const { packageId, gatewayId } = body;
+        const json = await request.json().catch(() => null);
+        const parsed = PurchaseCreditsSchema.safeParse(json);
 
-        if (!packageId) {
-            return NextResponse.json({ error: 'Package ID required' }, { status: 400 });
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Invalid request payload', details: parsed.error.flatten() },
+                { status: 400 }
+            );
         }
 
+        const { packageId, gatewayId } = parsed.data;
+
         // Get package details
-        const { data: package: creditPackage } = await supabase
+        const { data: creditPackage } = await supabase
             .from('credit_packages')
             .select('*')
             .eq('id', packageId)

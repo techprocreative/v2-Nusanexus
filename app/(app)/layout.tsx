@@ -20,6 +20,8 @@ export default async function AppLayout({
     .eq('id', user.id)
     .single();
 
+  const isAdmin = profile?.role === 'admin';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b">
@@ -33,12 +35,29 @@ export default async function AppLayout({
                 <Link href="/dashboard" className="text-gray-600 hover:text-gray-900">
                   Dashboard
                 </Link>
+                <Link href="/writer" className="text-gray-600 hover:text-gray-900">
+                  Writer
+                </Link>
+                <Link href="/image" className="text-gray-600 hover:text-gray-900">
+                  Image
+                </Link>
+                <Link href="/chat" className="text-gray-600 hover:text-gray-900">
+                  Chat
+                </Link>
                 <Link href="/library" className="text-gray-600 hover:text-gray-900">
                   Library
                 </Link>
-                <Link href="/billing" className="text-gray-600 hover:text-gray-900">
+                <Link href="/pricing" className="text-gray-600 hover:text-gray-900">
+                  Pricing
+                </Link>
+                <Link href="/settings/billing" className="text-gray-600 hover:text-gray-900">
                   Billing
                 </Link>
+                {isAdmin && (
+                  <Link href="/admin/dashboard" className="text-gray-600 hover:text-gray-900">
+                    Admin
+                  </Link>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-4">

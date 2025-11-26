@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/server';
 import { decryptPaymentCredentials } from './encryption';
 import { TripayClient } from './tripay';
 import { MidtransClient } from './midtrans';
@@ -6,7 +6,7 @@ import { MidtransClient } from './midtrans';
 export type PaymentGatewayType = 'tripay' | 'midtrans';
 
 export async function getPaymentGateway(gatewayId: string) {
-    const supabase = createClient();
+    const supabase = createServiceClient();
 
     const { data: gateway, error } = await supabase
         .from('payment_gateways')
@@ -42,7 +42,7 @@ export async function getPaymentGateway(gatewayId: string) {
 }
 
 export async function getActivePaymentGateways() {
-    const supabase = createClient();
+    const supabase = createServiceClient();
 
     const { data: gateways, error } = await supabase
         .from('payment_gateways')
@@ -58,7 +58,7 @@ export async function getActivePaymentGateways() {
 }
 
 export async function getUserPreferredGateway(userId: string) {
-    const supabase = createClient();
+    const supabase = createServiceClient();
 
     const { data: preference } = await supabase
         .from('user_payment_preferences')

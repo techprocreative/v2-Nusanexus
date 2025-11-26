@@ -23,7 +23,7 @@ export default async function EditProviderPage({
     }
 
     const { data: profile } = await supabase
-        .from('users')
+        .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single();
@@ -77,7 +77,10 @@ export default async function EditProviderPage({
                     {models && models.length > 0 ? (
                         <div className="space-y-2">
                             {models.map((model) => (
-                                <div key={model.id} className="border rounded p-3 flex items-center justify-between">
+                                <div
+                                    key={model.id}
+                                    className="border rounded p-3 flex items-center justify-between"
+                                >
                                     <div>
                                         <p className="font-medium">{model.display_name}</p>
                                         <p className="text-sm text-muted-foreground">{model.model_id}</p>

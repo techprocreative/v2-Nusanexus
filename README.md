@@ -8,7 +8,7 @@ AI-Powered Content Platform built with Next.js 14 and Supabase.
 - **Database**: Supabase PostgreSQL
 - **Authentication**: Supabase Auth
 - **Storage**: Supabase Storage
-- **Payments**: Stripe
+- **Payments**: Tripay, Midtrans (Stripe optional/legacy)
 - **AI**: OpenAI, Anthropic
 - **Styling**: TailwindCSS
 
@@ -19,7 +19,7 @@ AI-Powered Content Platform built with Next.js 14 and Supabase.
 - Node.js 18+
 - pnpm/npm/yarn
 - Supabase account
-- Stripe account (for payments)
+- Tripay and/or Midtrans account (for payments)
 - OpenAI API key
 
 ### Installation
@@ -86,7 +86,8 @@ aikeedo-nextjs/
 ├── lib/                   # Utilities
 │   ├── supabase/         # Supabase client
 │   ├── ai/               # AI integrations
-│   ├── billing/          # Stripe integration
+│   ├── billing/          # Legacy Stripe integration (optional)
+│   ├── payment/          # Tripay &ation
 │   └── storage/          # File storage
 ├── types/                 # TypeScript types
 └── supabase/
@@ -98,7 +99,7 @@ aikeedo-nextjs/
 - User authentication (email/password)
 - Multi-tenant workspaces
 - AI content generation (text, images, audio)
-- Subscription billing with Stripe
+- Subscription billing and credit purchases with Tripay & Midtrans
 - Credit-based usage system
 - File storage and management
 - Admin panel
@@ -109,9 +110,13 @@ The database includes these main tables:
 - `profiles` - User profiles (extends Supabase Auth)
 - `workspaces` - Multi-tenant workspaces
 - `workspace_members` - Workspace membership
-- `plans` - Subscription plans
-- `subscriptions` - Active subscriptions
-- `orders` - Payment orders
+- `plans` - Legacy subscription plans (Stripe)
+- `subscription_plans` - Active subscription plans (Tripay/Midtrans)
+- `subscriptions` - Active workspace subscriptions
+- `credit_packages` - One-time credit packages
+- `payment_gateways` - Configured payment gateways (Tripay, Midtrans)
+- `payment_transactions` - Subscription and credit purchase transactions
+- `orders` - Legacy payment orders (Stripe)
 - `library_items` - Generated AI content
 - `conversations` - Chat conversations
 - `messages` - Chat messages
@@ -132,11 +137,12 @@ See `.env.local.example` for all required environment variables.
 3. Add environment variables
 4. Deploy
 
-### Stripe Webhook
+### Payment Webhooks
 
-After deployment, configure your Stripe webhook:
-- Endpoint: `https://your-domain.com/api/billing/webhook`
-- Events: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_succeeded`
+After deployment, configure your payment webhooks:
+
+- Tripay callback: `https://your-domain.com/api/webhooks/tripay`
+- Midtrans notification: `https://your-domain.comn.*`, `invoice.payment_succeeded`
 
 ## License
 

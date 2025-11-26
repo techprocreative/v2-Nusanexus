@@ -1,0 +1,147 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/components/ui/use-toast';
+import { Loader2, Plus } from 'lucide-react';
+
+export default function AdminCreditsPage() {
+    const { toast } = useToast();
+    const [packages, setPackages] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPackages();
+    }, []);
+
+    const fetchPackages = async () => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/admin/credits?include_inactive=true');
+            const data = await response.json();
+
+            if (response.ok) {
+                setPackages(data.packages || []);
+            } else {
+                toast({
+                    title: 'Error',
+                    description: data.error || 'Failed to fetch credit packages',
+                    variant: 'destructive',
+                });
+            }
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to fetch credit packages',
+                variant: 'destructive',
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="container mx-auto py-8">
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold">Credit Packages</h1>
+                    <p className="text-muted-foreground">
+                        Manage one-time credit packages shown on the pricing page
+                    </p>
+                </div>
+                <Button asChild>
+                    <Link href="/admin/credits/new">
+                        <Plus className="mr-2 h-4 w-4" />
+                        New Package
+                    </Link>
+                </Button>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Packages</CardTitle>
+                    <CardDescription>
+                        {packages.length > 0
+                            ? `Total ${packages.length} packages (including inactive)`
+                            : 'No packages found'}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin" />
+                        </div>
+                    ) : packages.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Credits</TableHead>
+                                    <TableHead>Price</TableHead>
+                                    <TableHead>Discount</TableHead>
+                                    <TableHead>Active</TableHead>
+                                    <TableHead>Sort</TableHead>
+                                    <TableHead>Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {packages.map((pkg) => (
+                                    <TableRow key={pkg.id}>
+                                        <TableCell>{pkg.name}</TableCell>
+                                        <TableCell>
+                                            {pkg.credits.toLocaleString()} credits
+                                        </TableCell>
+                                        <TableCell>
+                                            Rp {pkg.price.toLocaleString('id-ID')}
+                                        </TableCell>
+                                        <TableCell>
+                                            {pkg.discount_percentage
+                                                ? `${pkg.discount_percentage}%`
+                                                : '-'}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge
+                                                variant={
+                                                    pkg.is_active ? 'default' : 'secondary'
+                                                }
+                                            >
+                                                {pkg.is_active ? 'Active' : 'Inactive'}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>{pkg.sort_order}</TableCell>
+                                        <TableCell>
+                                            <Button
+                                                asChild
+                                                size="sm"
+                                                variant="outline"
+                                            >
+                                                <Link href={`/admin/credits/${pkg.id}`}>
+                                                    Edit
+                                                </Link>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="text-center py-12 text-muted-foreground">
+                            <p>No credit packages configured yet</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

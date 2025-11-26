@@ -14,7 +14,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { Search, Loader2, UserX, UserCheck } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function AdminUsersPage() {
@@ -27,6 +27,7 @@ export default function AdminUsersPage() {
 
     useEffect(() => {
         fetchUsers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [page, search]);
 
     const fetchUsers = async () => {
@@ -68,6 +69,13 @@ export default function AdminUsersPage() {
         fetchUsers();
     };
 
+    const getFullName = (user: any) => {
+        const first = user.first_name || '';
+        const last = user.last_name || '';
+        const full = `${first} ${last}`.trim();
+        return full || 'No name';
+    };
+
     return (
         <div className="container mx-auto py-8">
             <div className="flex items-center justify-between mb-8">
@@ -84,7 +92,7 @@ export default function AdminUsersPage() {
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search by email or name..."
+                                placeholder="Search by name..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="pl-10"
@@ -126,15 +134,21 @@ export default function AdminUsersPage() {
                                         <TableRow key={user.id}>
                                             <TableCell>
                                                 <div>
-                                                    <p className="font-medium">{user.name || 'No name'}</p>
-                                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                                    <p className="font-medium">{getFullName(user)}</p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        ID: {user.id}
+                                                    </p>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
                                                 {user.workspaces?.name || 'No workspace'}
                                             </TableCell>
                                             <TableCell>
-                                                <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                                                <Badge
+                                                    variant={
+                                                        user.status === 'active' ? 'default' : 'secondary'
+                                                    }
+                                                >
                                                     {user.status}
                                                 </Badge>
                                             </TableCell>

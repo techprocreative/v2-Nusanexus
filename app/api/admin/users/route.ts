@@ -4,7 +4,9 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
     try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -12,7 +14,7 @@ export async function GET(request: Request) {
 
         // Check if user is admin
         const { data: profile } = await supabase
-            .from('users')
+            .from('profiles')
             .select('role')
             .eq('id', user.id)
             .single();
@@ -22,17 +24,22 @@ export async function GET(request: Request) {
         }
 
         const { searchParams } = new URL(request.url);
-        const page = parseInt(searchParams.get('page') || '1');
-        const limit = parseInt(searchParams.get('limit') || '20');
+        const page = parseInt(searchParams.get('page') || '1', 10);
+        const limit = parseInt(searchParams.get('limit') || '20', 10);
         const search = searchParams.get('search') || '';
         const offset = (page - 1) * limit;
 
         let query = supabase
-            .from('users')
-            .select('*, workspaces!current_workspace_id(name)', { count: 'exact' });
+            .from('profiles')
+            .select('*, workspaces!current_workspace_id(name, credit_count)', {
+                count: 'exact',
+            });
 
         if (search) {
-            query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
+            // Search by first_name or last_name (case-insensitive)
+            query = query.or(
+                `first_name.ilike.%${search}%,last_name.ilike.%${search}%`
+            );
         }
 
         const { data: users, error, count } = await query
